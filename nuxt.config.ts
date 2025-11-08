@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss', "@nuxt/icon"],
+  modules: ['@nuxtjs/tailwindcss', "@nuxt/icon", "@nuxtjs/google-fonts"],
   app: {
       head: {
           title: "Himanshu Adwani - Portfolio",
@@ -16,4 +16,12 @@ export default defineNuxtConfig({
           ]
       }
   },
+  googleFonts: {
+      families: {
+          'IBM+Plex+Sans': [400, 600, 700],
+      },
+      display: 'swap',
+      preload: true,
+  },
+  css: ['~/assets/css/main.css'],
 })

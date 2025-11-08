@@ -10,7 +10,11 @@ export default {
         "./*.vue",
     ],
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                sans: ['"IBM Plex Sans"']
+            }
+        },
     },
     plugins: [],
     darkMode: 'class', // i haven't implemented light mode yet
