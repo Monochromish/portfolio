@@ -11,9 +11,9 @@
       </p>
 
       <p class="text-gray-200 leading-relaxed">
-        Welcome to my main page, where you'll find ways of getting in touch with me,
-        some of my projects, and blogs. Some of the things I enjoy doing include writing
-        and learning, listening to music, and tinkering with hardware and software.
+        Welcome to my page. I build software and interfaces that feel good to use and are easy to maintain.
+        I care about snappiness, simplicity, and design that looks modern without getting in the way.
+        You’ll find my projects, writing, and contact info below.
       </p>
 
       <div class="flex justify-center gap-4 pt-6">
