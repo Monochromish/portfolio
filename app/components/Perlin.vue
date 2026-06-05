@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 import {
   Scene,
   PerspectiveCamera,
@@ -59,6 +59,14 @@ function createPerlin() {
 
 const container = ref<HTMLDivElement | null>(null)
 
+let animationId: number | null = null
+let renderer: WebGLRenderer | null = null
+let targetX = 0
+let targetY = 0
+
+let onMouseMove: (e: MouseEvent) => void
+let onResize: () => void
+
 onMounted(() => {
   const noise = createPerlin()
 
@@ -67,7 +75,7 @@ onMounted(() => {
   const camera = new PerspectiveCamera(FIELD_OF_VIEW, window.innerWidth / window.innerHeight, 1, 5000)
   camera.position.set(CAMERA_START.x, CAMERA_START.y, CAMERA_START.z)
 
-  const renderer = new WebGLRenderer({ alpha: true, antialias: true })
+  renderer = new WebGLRenderer({ alpha: true, antialias: true })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(window.devicePixelRatio)
   container.value!.appendChild(renderer.domElement)
@@ -80,19 +88,22 @@ onMounted(() => {
   mesh.rotation.x = -(Math.PI / 2.3)
   scene.add(mesh)
 
-  let t = 0, targetX = 0, targetY = 0
+  let t = 0
 
-  window.addEventListener('mousemove', e => {
+  onMouseMove = (e: MouseEvent) => {
     const RANGE = 70
     targetX = (e.clientX / window.innerWidth - 0.5) * RANGE
     targetY = (e.clientY / window.innerHeight - 0.5) * RANGE
-  })
+  }
 
-  window.addEventListener('resize', () => {
+  onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-  })
+    renderer!.setSize(window.innerWidth, window.innerHeight)
+  }
+
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('resize', onResize)
 
   const pos = geometry.attributes.position
 
@@ -111,11 +122,25 @@ onMounted(() => {
     camera.position.y += (-targetY - camera.position.y) * 0.04
     camera.lookAt(0, 0, 0)
 
-    renderer.render(scene, camera)
-    requestAnimationFrame(animate)
+    renderer!.render(scene, camera)
+    animationId = requestAnimationFrame(animate)
   }
 
   animate()
+})
+
+onBeforeUnmount(() => {
+  if (animationId !== null) {
+    cancelAnimationFrame(animationId)
+  }
+  window.removeEventListener('mousemove', onMouseMove)
+  window.removeEventListener('resize', onResize)
+  if (renderer) {
+    renderer.dispose()
+    renderer.forceContextLoss()
+    renderer.domElement.remove()
+    renderer = null
+  }
 })
 </script>
 
