@@ -128,7 +128,7 @@ onMounted(load)
         Sign in with GitHub
       </a>
       <p v-else-if="view === 'not-configured'" class="note">
-        Owner sign-in is not set up on this server yet. The steps are in docs/setup.md.
+        Owner sign-in is not set up on this server yet. It needs the NUXT_GITHUB_CLIENT_ID, NUXT_GITHUB_CLIENT_SECRET and NUXT_OWNER_GITHUB_ID secrets.
       </p>
       <p v-else-if="view === 'failed'" class="note">
         The queue did not load. Reload the page to try again.
