@@ -66,7 +66,7 @@ export default defineNuxtConfig({
     hooks: {
       'build:before'(nitro) {
         if (nitro.options.dev || !nitro.options.preset.startsWith('cloudflare')) return
-        if (!process.env.NUXT_D1_DATABASE_ID) throw new Error('NUXT_D1_DATABASE_ID must be set for a Cloudflare build, see docs/setup.md')
+        if (!process.env.NUXT_D1_DATABASE_ID) throw new Error('NUXT_D1_DATABASE_ID must be set to the D1 database id for a Cloudflare build')
         nitro.options.database.default = { connector: 'cloudflare-d1', options: { bindingName: 'DB' } }
       },
     },
