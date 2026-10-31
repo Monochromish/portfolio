@@ -22,7 +22,7 @@ export function useTheme() {
     const quick = performance.now() - flippedAt < 600
     flippedAt = performance.now()
     // detail 0 means a key press
-    if (!document.startViewTransition || e?.detail === 0 || quick) return apply(next)
+    if (!document.startViewTransition || e?.detail === 0 || quick || matchMedia('(pointer: coarse)').matches) return apply(next)
     document.startViewTransition(() => apply(next))
   }
 

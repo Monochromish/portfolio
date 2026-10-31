@@ -41,10 +41,23 @@ const images = computed(() => props.shots.flatMap((s) => {
   })
   return s.light ? [image(s.file, s.alt, 'night'), image(s.light.file, s.light.alt, 'day')] : [image(s.file, s.alt)]
 }))
+
+const media = ref<HTMLElement>()
+const dark = useState('dark', () => false)
+const mounted = ref(false)
+const offstage = (theme?: 'night' | 'day') => !!theme && theme !== (mounted.value && dark.value ? 'night' : 'day')
+
+onMounted(() => {
+  mounted.value = true
+  for (const img of media.value?.querySelectorAll<HTMLImageElement>('.night, .day') ?? []) {
+    if (img.complete) img.decode().catch(() => {})
+    else img.addEventListener('load', () => img.decode().catch(() => {}), { once: true })
+  }
+})
 </script>
 
 <template>
-  <div class="media" :style="{ '--wide': stage?.wide ?? '16 / 9', '--narrow': stage?.narrow ?? '4 / 3' }">
+  <div ref="media" class="media" :style="{ '--wide': stage?.wide ?? '16 / 9', '--narrow': stage?.narrow ?? '4 / 3' }">
     <img
       v-for="img in images"
       :key="img.name"
@@ -56,6 +69,7 @@ const images = computed(() => props.shots.flatMap((s) => {
       :width="img.width"
       :height="img.height"
       :alt="img.alt"
+      :aria-hidden="offstage(img.theme) ? 'true' : undefined"
       :style="img.style"
       loading="lazy"
       :decoding="img.theme ? 'sync' : 'async'"
@@ -89,7 +103,8 @@ const images = computed(() => props.shots.flatMap((s) => {
 }
 :root:not(.dark) .night,
 :root.dark .day {
-  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* spans the 1040 px page frame */
