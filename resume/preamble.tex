@@ -1,0 +1,53 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[sfdefault,lf]{carlito}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[english]{babel}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage[hidelinks]{hyperref}
+
+\input{glyphtounicode}
+\pdfgentounicode=1
+% Carlito ligature glyphs, mapped to their letters
+\pdfglyphtounicode{uniFB00}{0066 0066}
+\pdfglyphtounicode{uniFB01}{0066 0069}
+\pdfglyphtounicode{uniFB02}{0066 006C}
+\pdfglyphtounicode{uniFB03}{0066 0066 0069}
+\pdfglyphtounicode{uniFB04}{0066 0066 006C}
+\pdfglyphtounicode{f_b.liga}{0066 0062}
+\pdfinterwordspaceon
+
+\hypersetup{pdfauthor={Himanshu Shailesh Adwani}, pdftitle={Himanshu Shailesh Adwani - Resume}}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{0pt}
+\raggedright
+\raggedbottom
+
+\titleformat{\section}{\vspace{-4pt}\bfseries}{}{0em}{\MakeUppercase}[\vspace{-6pt}\rule{\linewidth}{0.5pt}\vspace{-5pt}]
+\titlespacing*{\section}{0pt}{9pt}{5pt}
+
+\newcommand{\entry}[4]{%
+  \begin{tabularx}{\linewidth}{@{}X r@{}}
+    \textbf{#1} & \textbf{#2} \\
+    \small\textit{#3} & \small\textit{#4} \\
+  \end{tabularx}\par\vspace{-2pt}}
+
+\newcommand{\project}[2]{%
+  \begin{tabularx}{\linewidth}{@{}X r@{}}
+    \textbf{#1} & \small #2 \\
+  \end{tabularx}\par\vspace{-2pt}}
+
+\newenvironment{bullets}{\begin{itemize}[leftmargin=0.16in, label=\textbullet, itemsep=1pt, parsep=0pt, topsep=2pt, partopsep=0pt]}{\end{itemize}\vspace{6pt}}
+
+\newcommand{\sep}{\unskip\enspace|\enspace\ignorespaces}
+
+\newcommand{\skill}[2]{\textbf{#1:} #2\par\vspace{2pt}}
+
+\newif\ifcoursework

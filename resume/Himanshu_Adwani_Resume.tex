@@ -1,0 +1,73 @@
+\input{preamble}
+
+\begin{document}
+
+\begin{center}
+  % {} after W stops the W-A kern, which parsers read as a space
+  {\LARGE\bfseries HIMANSHU SHAILESH ADW{}ANI}\par\vspace{3pt}
+  {\bfseries Seeking Summer 2027 Software Engineering Internships \sep Built Google Cast support for a 250,000+ install app}\par\vspace{2pt}
+  State College, PA (open to relocation) \sep (814) 663-7207 \sep
+  \href{mailto:himanshu.adwani@outlook.com}{himanshu.adwani@outlook.com}\par
+  \href{https://himanshu.sh}{himanshu.sh} \sep
+  \href{https://github.com/Monochromish}{github.com/Monochromish} \sep
+  \href{https://www.linkedin.com/in/himanshu-adwani}{linkedin.com/in/himanshu-adwani}
+\end{center}\vspace{-6pt}
+
+\section{Education}
+\entry{The Pennsylvania State University -- University Park, PA}{Aug 2024 -- May 2028 (expected)}
+      {Bachelor of Science in Computer Science}{Dean's List: Fall 2024, Summer 2025}
+\vspace{3pt}
+\textbf{Relevant coursework:} Data Structures, Object-Oriented Programming, Discrete Mathematics for Computer Science,
+Introduction to Systems Programming (in progress), Programming Language Concepts (in progress)\par
+\vspace{2pt}
+
+\section{Experience}
+\entry{Senior Lead Developer}{Nov 2022 -- Present}
+      {Cider Collective -- maker of Cider, a paid Apple Music client for Windows, macOS and Linux (250,000+ installs)}{Remote}
+\begin{bullets}
+  \item Built Cider's current Google Cast support, first shipped to stable in Jul~2026 as an opt-in feature: a CastV2 sender in TypeScript
+        and C\# with protobuf framing hand-encoded over TLS, heartbeats and mDNS device discovery.
+  \item Wrote the TV receiver's MSE/EME playback pipeline: plays byte-range CMAF segments through the licensed
+        Widevine/EME path and keeps a bounded buffer across seeks; later added synced lyrics and audio-only speaker support.
+  \item Designed a rate-limited license-request service so the TV never holds Apple Music credentials: the desktop app
+        approves each license request only while a live, time-limited grant is active.
+  \item Led the rebuild of the app's settings system, replacing eight hand-built Vue pages with typed setting lists that later
+        categories also use, and rewrote its search to handle typos, accents and languages written without spaces.
+  \item Developed features from the Vue interface to the Electron app: library sorting and search, saving the queue as a playlist,
+        editorial album banners, and its first tray, menu bar and configurable keyboard shortcuts.
+  \item Refactored the Web Audio effects chain, fixing Dolby Atmos compatibility, clipping and memory leaks; in the
+        Windows~.NET app, stopped WebView2 painting while hidden, released leaked audio sessions and fixed high-DPI menus.
+\end{bullets}
+
+\entry{Firmware Project Manager}{Sep 2026 -- Present}
+      {Nittany Motorsports (Penn State Formula SAE Electric) -- Electronics Team}{University Park, PA}
+\begin{bullets}
+  \item Developed SD-card CAN logging in Vector BLF format for the car's ESP32-C6 telemetry unit, with an allocation-free
+        classifier that flags sessions containing faults or drive data, covered by host-run software-in-the-loop tests.
+  \item Fixed a use-after-free in the CAN transmit path and out-of-bounds ESP-NOW parser reads that dropped live telemetry.
+  \item Unified STM32 and ESP-IDF builds behind one containerized CLI (build, lint, DBC code generation, SIL tests, flashing)
+        and ran CI on the same images, caching the 3 GB STM32 image on GHCR by input hash.
+  \item Embedded a post-link header (git commit, branch, size, CRC) in every STM32 binary so the team can verify which
+        firmware is running on the car.
+\end{bullets}
+
+\section{Projects}
+\project{airplay-core -- AirPlay 2 sender library}{Rust \sep Oct 2026}
+\begin{bullets}
+  \item Wrote an AirPlay 2 sender with 559 tests: HomeKit SRP/Ed25519 pairing, a ChaCha20-Poly1305 encrypted RTSP channel
+        and a PTP grandmaster clock; verified realtime ALAC playback on Apple TV 4K hardware.
+  \item Exposed a C ABI with panic-safe FFI boundaries and .NET/Node bindings, cross-compiled for Windows, Linux and macOS.
+\end{bullets}
+
+\project{Gust -- Encrypted peer-to-peer file transfer}{C\#, .NET \sep Sep 2026}
+\begin{bullets}
+  \item Designed a transfer protocol with its own mDNS discovery, pinned mutual TLS, code-based pairing using a commitment
+        scheme, and resumable uploads hashed while streaming; covered by 406 automated tests.
+\end{bullets}
+
+\section{Technical Skills}
+\skill{Languages}{C, C++, Rust, TypeScript, C\#, Go, Python, JavaScript, Bash}
+\skill{Systems \& Protocols}{TLS/mTLS, mDNS, protobuf, Google Cast, AirPlay 2 (RTSP, PTP), CAN, Widevine/EME, HLS/CMAF}
+\skill{Platforms \& Tools}{Linux, Node.js, Electron, .NET, Vue/Nuxt, Docker, GitHub Actions, Nix, STM32, ESP-IDF, Git}
+
+\end{document}
