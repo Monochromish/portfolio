@@ -1,6 +1,5 @@
 import type { Film } from '#shared/types'
 
-// after a failed fetch, Letterboxd is left alone for a minute
 const BACKOFF_MS = 60_000
 let failedAt = 0
 

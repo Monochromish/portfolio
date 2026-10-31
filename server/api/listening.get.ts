@@ -18,7 +18,6 @@ interface LastfmRecent {
 
 // grey-star placeholder Last.fm serves for missing artwork
 const NO_ART = '2a96cbd8b46e442fc41c2b86b821562f'
-// after a failed call, Last.fm is left alone for a minute so an outage can't burn the API key
 const BACKOFF_MS = 60_000
 let failedAt = 0
 

@@ -61,7 +61,6 @@ export default defineNuxtConfig({
         // @ts-expect-error Nitro's bundled Wrangler types predate the rate-limit binding; wrangler.json gets it as written
         ratelimits: [{ name: 'GUESTBOOK_RL', namespace_id: '1001', simple: { limit: 3, period: 60 } }],
         observability: { enabled: true },
-        // 100 ms of CPU a request, ten times what pages use, so a runaway request can't run up the bill
         limits: { cpu_ms: 100 },
         workers_dev: false,
         preview_urls: false,
