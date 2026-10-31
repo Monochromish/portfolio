@@ -2,7 +2,7 @@
 const site = 'https://himanshu.sh'
 const { alias, name } = useIdentity()
 const origin = alias ? useRequestURL().origin : site
-const description = `${alias ? 'Monochromish (Himanshu Adwani)' : 'Himanshu Adwani (Isaiah)'}: senior lead developer at Cider, computer science at Penn State, looking for a Summer 2027 software engineering internship.`
+const description = `${alias ? 'Monochromish (Himanshu Adwani)' : 'Himanshu Adwani (Isaiah)'}: senior lead developer at Cider, the Apple Music client, and computer science student at Penn State.`
 const ogImage = `${origin}/og.png`
 const ogAlt = 'A pixel lagoon seen from above with manta rays'
 const avatar = 'https://avatars.githubusercontent.com/u/79590499?v=4'
@@ -47,13 +47,16 @@ useHead({
 // a Discord component embed (docs.discord.com: Link previews, Component embeds)
 const embed = JSON.stringify({
   component: {
-    // container > text > gallery (the lagoon) > row of link buttons
+    // container > section (text and a square of the lagoon) > row of link buttons
     type: 17,
     accent_color: 0x57B9BF,
     spoiler: false,
     components: [
-      { type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` },
-      { type: 12, items: [{ media: { url: ogImage }, description: ogAlt }] },
+      {
+        type: 9,
+        components: [{ type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` }],
+        accessory: { type: 11, media: { url: `${origin}/og-thumb.png` }, description: ogAlt },
+      },
       {
         type: 1,
         components: [

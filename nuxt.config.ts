@@ -41,6 +41,7 @@ export default defineNuxtConfig({
     '/icon-192.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/apple-touch-icon.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/og.png': { headers: { 'cache-control': 'public, max-age=86400' } },
+    '/og-thumb.png': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/Himanshu_Adwani_Resume.pdf': { headers: { 'cache-control': 'public, max-age=3600, stale-while-revalidate=86400' } },
     '/': { headers: { 'cache-control': 'private, no-cache', 'vary': 'cookie' } },
     '/stickers': { headers: { 'cache-control': 'private, no-cache', 'vary': 'cookie' } },
@@ -77,7 +78,7 @@ export default defineNuxtConfig({
       viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       title: 'Himanshu Adwani',
       meta: [
-        { name: 'description', content: 'Himanshu Adwani (Isaiah), Senior Lead Developer at Cider and Computer Science student at Penn State, looking for a Summer 2027 software engineering internship.' },
+        { name: 'description', content: 'Himanshu Adwani (Isaiah): senior lead developer at Cider, the Apple Music client, and computer science student at Penn State.' },
       ],
       link: [
         { rel: 'preload', href: '/fonts/figtree.woff2', as: 'font', type: 'font/woff2', crossorigin: '' },
