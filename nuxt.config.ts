@@ -32,7 +32,7 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    '/**': { headers: { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'" } },
+    '/**': { headers: { 'strict-transport-security': 'max-age=31536000', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'" } },
     '/admin/**': { ssr: false, headers: { 'x-robots-tag': 'noindex, nofollow' } },
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/work/**': { headers: { 'cache-control': 'public, max-age=86400, stale-while-revalidate=604800' } },
@@ -61,6 +61,8 @@ export default defineNuxtConfig({
         // @ts-expect-error Nitro's bundled Wrangler types predate the rate-limit binding; wrangler.json gets it as written
         ratelimits: [{ name: 'GUESTBOOK_RL', namespace_id: '1001', simple: { limit: 3, period: 60 } }],
         observability: { enabled: true },
+        workers_dev: false,
+        preview_urls: false,
       },
     },
     hooks: {

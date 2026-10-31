@@ -4,6 +4,9 @@ __pycache__/
 .output
 .data
 .env
+.env.*
+!.env.example
+.dev.vars*
 dist
 *.log
 .wrangler
