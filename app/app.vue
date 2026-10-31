@@ -47,19 +47,13 @@ useHead({
 // a Discord component embed (docs.discord.com: Link previews, Component embeds)
 const embed = JSON.stringify({
   component: {
-    // container > section (text and a square of the lagoon) > row of link buttons
+    // container > text > gallery (the lagoon) > row of link buttons
     type: 17,
     accent_color: 0x57B9BF,
     spoiler: false,
     components: [
-      {
-        type: 9,
-        components: [{
-          type: 10,
-          content: `# ${name}\nSenior lead developer at Cider, the Apple Music client for Windows, macOS and Linux. Computer science at Penn State, looking for a software engineering internship for summer 2027.`,
-        }],
-        accessory: { type: 11, media: { url: `${origin}/og-square.png` }, description: ogAlt },
-      },
+      { type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` },
+      { type: 12, items: [{ media: { url: ogImage }, description: ogAlt }] },
       {
         type: 1,
         components: [
