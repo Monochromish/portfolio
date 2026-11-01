@@ -8,3 +8,7 @@ This is a Nuxt app that runs on one of those domains.
 - [UnoCSS](https://unocss.dev) (Wind4 preset) for utilities, with a hand-drawn icon set inlined in `uno.config.ts`.
 - Cloudflare D1 through Nitro's built-in `useDatabase()` for the sticker book; Node's built-in SQLite in development.
 - [Bun](https://bun.sh) as the package manager.
+
+## Credits
+
+- The letter-tile mantas take their technique from the koi at [daoho.dev](https://daoho.dev).
