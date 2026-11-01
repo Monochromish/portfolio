@@ -217,6 +217,7 @@ const fallback = `<svg viewBox="${INK.x} ${INK.y} ${INK.width} ${INK.height}" ar
 .wordmark {
   position: relative;
   width: 100%;
+  overflow: clip;
   color: var(--ink);
 }
 canvas {
@@ -236,5 +237,23 @@ canvas.ready {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .wordmark {
+      view-timeline: --wordmark;
+    }
+    canvas {
+      animation: rise linear both;
+      animation-timeline: --wordmark;
+      animation-range: entry;
+    }
+  }
+}
+/* the word scrolls in at 1.6 times the page's speed */
+@keyframes rise {
+  from {
+    translate: 0 60%;
+  }
 }
 </style>
