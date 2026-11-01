@@ -385,6 +385,10 @@ export class Lagoon {
     this.paintBase()
     this.paintGround()
     if (!this.running) this.draw()
+    else {
+      this.acc = Math.max(this.acc, STEP)
+      this.skip = true
+    }
   }
 
   setVisible(v: boolean) {
