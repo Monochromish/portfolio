@@ -66,7 +66,9 @@ function toggle() {
   }
 }
 
-watch(() => props.covered, c => lagoon?.setVisible(!c))
+watch(() => props.covered, (c) => {
+  if (!reduced.value) lagoon?.setVisible(!c)
+})
 
 onMounted(() => {
   host = layer.value?.parentElement ?? null
