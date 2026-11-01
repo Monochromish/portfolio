@@ -1,6 +1,7 @@
 import { bayer } from '../utils/dither'
-import { clamp, labelClear, mixPacked, pack, smooth, tnoise, wrapAngle, type RGB } from './math'
-import type { Palette } from './palette'
+import { Drawing, inside, type Mark } from './body'
+import { clamp, labelClear, smooth, wrapAngle } from './math'
+import { SINKS, type Palette } from './palette'
 
 export interface Patch {
   x: number
@@ -32,7 +33,6 @@ export interface Senses {
 // cells between the nearest edge of a body and the paragraph
 const PHONE_TEXT_CLEAR = 12
 
-// u: head front (0) to tail base (1) in disc lengths; w: distance from the midline; wingtips at w = S around u = 0.56
 export class Manta {
   x: number
   y: number
@@ -59,10 +59,12 @@ export class Manta {
   full = 0
   cells = new Int32Array(0)
   colors = new Uint32Array(0)
+  shades = new Uint32Array(0)
   count = 0
   edge = new Int32Array(0)
   edgeCount = 0
-  dive = 0
+  private dive = 0
+  sink = 0
   madAt = -1
   madPhase: 'charge' | 'slap' | 'huff' | 'sulk' | null = null
   splash = false
@@ -72,7 +74,9 @@ export class Manta {
   private phaseAt = 0
   private grudge = { x: 0, y: 0 }
   private scorn = { x: 0, y: 0 }
-  private mark: { s: number, a: number, tilt: number, gray: number }
+  private drawing = new Drawing()
+  private readonly outline: number[] = []
+  readonly mark: Mark
 
   targetL: number
 
@@ -97,65 +101,18 @@ export class Manta {
     this.orbitDir = rand() < 0.5 ? -1 : 1
     this.passSide = rand() < 0.5 ? -1 : 1
     this.mark = { s: id * 17 + 3, a: rand() * 0.3 - 0.15, tilt: rand() * 0.5 - 0.2, gray: rand() }
-  }
-
-  private halfSpan(u: number) {
-    const S = this.S
-    if (u < 0.05 || u > 0.94) return -1
-    if (u <= 0.56) return 0.17 + (S - 0.17) * Math.pow((u - 0.05) / 0.51, 0.78)
-    return 0.16 + (S - 0.16) * Math.pow(1 - (u - 0.56) / 0.38, 1.9)
+    for (let u = -0.12; u <= 0.98; u += 0.06) {
+      let edge = 0
+      for (let w = 0.04; w <= S + 0.05; w += 0.04) if (inside(u, w, S)) edge = w
+      if (inside(u, 0, S)) this.outline.push(0.45 - u, 0)
+      if (edge) this.outline.push(0.45 - u, edge, 0.45 - u, -edge)
+    }
   }
 
   rim(): [number, number][] {
     const points: [number, number][] = []
-    for (let u = 0.04; u <= 0.98; u += 0.06) {
-      let edge = 0
-      for (let w = 0.04; w <= this.S + 0.05; w += 0.04) if (this.inside(u, w)) edge = w
-      const along = (0.45 - u) * this.L
-      points.push([along, 0])
-      if (edge) points.push([along, edge * this.L], [along, -edge * this.L])
-    }
+    for (let k = 0; k < this.outline.length; k += 2) points.push([this.outline[k]! * this.L, this.outline[k + 1]! * this.L])
     return points
-  }
-
-  private inside(u: number, w: number) {
-    if (u >= 0 && u <= 1 && w < 0.17 - 0.06 * smooth(0.75, 1, u)) return 1
-    const hs = this.halfSpan(u)
-    if (w < hs) return 1
-    if (w < hs + 0.02) return 0.5
-    const open = this.lobes
-    const cu = u + 0.05 + 0.03 * open, cw = w - (0.135 + 0.02 * open)
-    if (cu * cu / (0.0036 + 0.004 * open) + cw * cw / (0.0009 + 0.0012 * open) <= 1) return 1
-    const pu = u - 0.97, pw = w - 0.13
-    if (pu * pu / 0.0016 + pw * pw / 0.0016 <= 1) return 1
-    if (u > 0.98 && u < 1.6 && w < 0.013 * (1 - (u - 0.98) / 0.62) + 0.004) return 1
-    return 0
-  }
-
-  private wave = new Float32Array(128)
-
-  private prepareWave() {
-    const amp = 0.3 + 0.35 * this.effort
-    for (let i = 0; i < 128; i++) this.wave[i] = amp * Math.sin(this.flap - 2.2 * (i / 64 - 0.2))
-  }
-
-  private angle(u: number, w: number, side: number) {
-    const r = Math.min(1, w / this.S)
-    const i = Math.max(0, Math.min(127, Math.round((u + 0.2) * 64)))
-    return this.wave[i]! * r * Math.sqrt(Math.sqrt(r)) + side * this.bank * r
-  }
-
-  private marking(u: number, w: number) {
-    const m = this.mark
-    if (w < 0.19 || u < 0.08) return 0
-    const n = (tnoise(u * 56 + m.s * 13, w * 56) - 0.5) * 0.16
-    const edge = (0.52 + n + m.a * 0.4) - (u - 0.08) * (1.05 + m.tilt * 0.4)
-    const front = u - (0.1 + 0.07 * Math.max(0, w - 0.3))
-    const margin = this.halfSpan(u) - w
-    if (front < 0 || w > edge + 0.02 || margin < 0.06) return 0
-    const soft = clamp((edge - w) / 0.16, 0, 1) * clamp(front / 0.05, 0, 1) * clamp((margin - 0.06) / 0.08, 0, 1)
-    if (tnoise(u * 208 + m.s * 7, w * 208 + 40) > 0.8 - m.gray * 0.15) return soft * 0.4
-    return soft
   }
 
   mouth() {
@@ -168,125 +125,74 @@ export class Manta {
     return { x: Math.round(k * 0.55), y: Math.round(k) }
   }
 
-  raster(W: number, H: number, pal: Palette, water: Uint32Array, light: number[], calm: Float32Array, chrome: Float32Array, night: boolean, dt: number) {
-    this.prepareWave()
-    const L = this.L, S = this.S
-    const c = Math.cos(this.heading), s = Math.sin(this.heading)
-    const cxp = this.x, cyp = this.y
-    const ahead = 0.62 * L, behind = 0.56 * L
-    const half = (S + 0.06) * L
-    const quad = [[ahead, half], [ahead, -half], [-behind, -half], [-behind, half]].map(([a, l]) => [cxp + c * a! - s * l!, cyp + s * a! + c * l!] as const)
-    let minY = Infinity, maxY = -Infinity
-    for (const q of quad) { minY = Math.min(minY, q[1]); maxY = Math.max(maxY, q[1]) }
+  raster(W: number, H: number, pal: Palette, sunk: Uint32Array, light: number[], calm: Float32Array, chrome: Float32Array, night: boolean, t: number, dt: number, spare: boolean) {
+    const fresh = this.drawing.update(this, light, night, t, spare)
+    const { xy, tone, body, held } = this.drawing.sprite!
+    const skin = pal.skin[this.drawing.level]!
     const o = this.shadowOffset(night)
-    const y0 = Math.max(-o.y, Math.floor(minY)), y1 = Math.min(H - 1, Math.ceil(maxY))
-    const tailLen = Math.ceil(L * 0.7) + 4
-    const need = Math.ceil((2 * half + 2) * (ahead + behind + 2) * 1.5) + tailLen * 3
-    if (this.cells.length < need) {
-      this.cells = new Int32Array(need)
-      this.colors = new Uint32Array(need)
-      this.edge = new Int32Array(need)
+    const ox = Math.round(this.x), oy = Math.round(this.y)
+    if (this.cells.length < tone.length) {
+      this.cells = new Int32Array(tone.length)
+      this.colors = new Uint32Array(tone.length)
+      this.shades = new Uint32Array(tone.length)
+      this.edge = new Int32Array(tone.length)
     }
-    let n = 0
-    let e = 0
-    // body just past the top or left edge still casts a shadow onto the screen
-    const offscreen = (px: number, py: number) => {
-      if ((px < 0 || py < 0) && px >= -o.x && py >= -o.y && px < W && py < H && e < this.edge.length) this.edge[e++] = (py + o.y) * W + px + o.x
-    }
+    const c = Math.cos(this.heading), s = Math.sin(this.heading), L = this.L
     let deep = 0
-    const fadeNight = night ? 0.55 + 0.45 * this.depth : 1
-    for (let py = y0; py <= y1; py++) {
-      const yc = py + 0.5
-      let xl = Infinity, xr = -Infinity
-      for (let e = 0; e < 4; e++) {
-        const p0 = quad[e]!, p1 = quad[(e + 1) & 3]!
-        if ((p0[1] <= yc && p1[1] >= yc) || (p1[1] <= yc && p0[1] >= yc)) {
-          const xi = p1[1] === p0[1] ? p0[0] : p0[0] + (yc - p0[1]) * (p1[0] - p0[0]) / (p1[1] - p0[1])
-          xl = Math.min(xl, xi); xr = Math.max(xr, xi)
-        }
-      }
-      if (xl > xr) continue
-      const xa = Math.max(-o.x, Math.floor(xl)), xb = Math.min(W - 1, Math.ceil(xr))
-      for (let px = xa; px <= xb; px++) {
-        const dx = px + 0.5 - cxp, dy = py + 0.5 - cyp
-        const fw = (-dx * s + dy * c) / L
-        if (fw > S + 0.05 || fw < -S - 0.05) continue
-        const u = 0.45 - (dx * c + dy * s) / L
-        if (u < -0.16 || u > 1.02) continue
-        const side = fw < 0 ? -1 : 1
-        let w = fw * side
-        if (w > 0.15) {
-          w = fw * side / Math.max(0.3, Math.cos(this.angle(u, w, side)))
-          w = fw * side / Math.max(0.3, Math.cos(this.angle(u, w, side)))
-        }
-        const cover = this.inside(u, w)
-        if (!cover) continue
-        if (cover < 1 && bayer(px, py) > 0.5) continue
-        if (px < 0 || py < 0) {
-          offscreen(px, py)
-          continue
-        }
-        const a = this.angle(u, w, side)
-        const z = 1.2 * (w / S)
-        const tilt = (0.7 * z / (1 + 0.28 * z * z) + a) * side
-        const st = Math.sin(tilt)
-        const dot = -s * st * light[0]! + c * st * light[1]! + Math.cos(tilt) * light[2]!
-        const mottle = (tnoise(u * 88 + this.mark.s * 31, w * 88 * side + 128) - 0.5) * 0.22
-        const lit = clamp(0.12 + 0.85 * dot - 0.22 * smooth(0.55, 1, w / S) + 0.12 * (1 - smooth(0, 0.22, w)) + mottle, 0, 1)
-        const th = bayer(Math.floor(u * L * 0.9) & 7, (Math.floor(w * L * 0.9) * side) & 7)
-        const inMark = this.marking(u, w) > th
-        const tones = inMark ? pal.marks : pal.back
-        const g = lit * 3, i = Math.floor(g)
-        let col: RGB = night && inMark ? pal.marks[1]! : tones[Math.min(3, i + (g - i > th ? 1 : 0))]!
-        const eye = this.mode !== 'sleep' && Math.abs(u - 0.085) < 0.02 && Math.abs(w - 0.165) < 0.018
-        if (eye || (u < 0.03 && w < 0.15)) col = pal.back[0]!
-        const idx = py * W + px
-        if (calm[idx]! > deep) deep = calm[idx]!
-        const sink = (1 - fadeNight) * 0.9
-        let packed = sink > 0.02 && bayer(px, py) < sink ? water[idx]! : pack(col)
-        if (labelClear(chrome[idx]!) > bayer(px, py)) packed = mixPacked(packed, water[idx]!, 0.85)
-        this.cells[n] = idx
-        this.colors[n] = packed
-        n++
-      }
+    for (let k = 0; k < this.outline.length; k += 2) {
+      const a = this.outline[k]! * L, w = this.outline[k + 1]! * L
+      const x = Math.floor(this.x + c * a - s * w), y = Math.floor(this.y + s * a + c * w)
+      if (x >= 0 && y >= 0 && x < W && y < H && calm[y * W + x]! > deep) deep = calm[y * W + x]!
     }
-    const tail = pack(pal.back[1]!)
-    const tailCell = (idx: number) => {
-      const f = Math.max(labelClear(chrome[idx]!) * 0.85, smooth(0.35, 0.82, calm[idx]!) * 0.9)
-      return f > 0.01 ? mixPacked(tail, water[idx]!, f) : tail
+    // the head, from 0.3 body lengths ahead of the centre, clears a label as one piece, eased in over the 0.1 behind it
+    const hc = Math.cos(held.heading), hs = Math.sin(held.heading), front = 0.3 * L
+    let head = 0
+    for (let k = 0; k < body; k++) {
+      const dx = xy[2 * k]!, dy = xy[2 * k + 1]!, x = ox + dx, y = oy + dy
+      if (dx * hc + dy * hs > front && x >= 0 && y >= 0 && x < W && y < H) head = Math.max(head, chrome[y * W + x]!)
     }
-    const at = (u: number) => [cxp + c * (0.45 - u) * L, cyp + s * (0.45 - u) * L] as const
-    const [tx0, ty0] = at(0.98), [tx1, ty1] = at(1.6)
-    const steps = Math.ceil(Math.hypot(tx1 - tx0, ty1 - ty0)) + 1
-    for (let k = 0; k <= steps; k++) {
-      const f = k / steps
-      const px = Math.floor(tx0 + (tx1 - tx0) * f), py = Math.floor(ty0 + (ty1 - ty0) * f)
-      if (px < 0 || py < 0 || px >= W || py >= H || n >= this.cells.length) {
-        offscreen(px, py)
-        continue
-      }
-      const idx = py * W + px
-      this.cells[n] = idx
-      this.colors[n] = tailCell(idx)
-      n++
-      if (f < 0.25 && L > 40 && n < this.cells.length && px + 1 < W) {
-        this.cells[n] = idx + 1
-        this.colors[n] = tailCell(idx + 1)
-        n++
-      }
-    }
+    const lift = labelClear(head)
     const target = smooth(0.35, 0.82, deep) * 0.9
     this.dive = dt > 0 ? this.dive + (target - this.dive) * (1 - Math.exp(-dt / (target > this.dive ? 0.09 : 0.22))) : target
     const lag = target - this.dive > 0.02
-    if (this.dive > 0.01 || lag) {
-      for (let k = 0; k < n; k++) {
-        const idx = this.cells[k]!
-        const f = lag ? Math.max(this.dive, smooth(0.84, 0.89, calm[idx]!) * 0.9) : this.dive
-        if (f > 0.01) this.colors[k] = mixPacked(this.colors[k]!, water[idx]!, f)
+    // the dive reaches 0.9 and has sunk the body away from 0.87; a step holds until the dive is 0.65 of a step past it
+    const want = Math.min(SINKS, this.dive / 0.87 * SINKS)
+    if (want > SINKS - 1) this.sink = want
+    else if (dt <= 0 || Math.abs(want - this.sink) > 0.65) this.sink = Math.round(want)
+    let n = 0
+    let e = 0
+    for (let k = 0; k < tone.length; k++) {
+      const x = ox + xy[2 * k]!, y = oy + xy[2 * k + 1]!
+      if (x >= W || y >= H) continue
+      // body just past the top or left edge still casts a shadow onto the screen
+      if (x < 0 || y < 0) {
+        if (x >= -o.x && y >= -o.y && x + o.x < W) this.edge[e++] = (y + o.y) * W + x + o.x
+        continue
       }
+      const idx = y * W + x
+      let q = labelClear(chrome[idx]!)
+      if (k >= body) q = Math.max(q, smooth(0.35, 0.82, calm[idx]!))
+      else {
+        if (lift) q = Math.max(q, lift * smooth(front - 0.1 * L, front, xy[2 * k]! * hc + xy[2 * k + 1]! * hs))
+        if (lag) q = Math.max(q, smooth(0.84, 0.89, calm[idx]!))
+      }
+      const p = Math.max(this.sink, q * SINKS), i = Math.floor(p)
+      const step = i + (p - i > bayer(x - ox, y - oy) ? 1 : 0)
+      if (step >= SINKS) {
+        this.colors[n] = sunk[idx]!
+        this.shades[n] = sunk[idx]!
+      }
+      else {
+        const sl = tone[k]!
+        this.colors[n] = skin[step]![sl]!
+        this.shades[n] = skin[step]![pal.shade[sl]!]!
+      }
+      this.cells[n] = idx
+      n++
     }
     this.count = n
     this.edgeCount = e
+    return fresh
   }
 
   eta(px: number, py: number) {

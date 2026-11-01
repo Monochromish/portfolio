@@ -38,15 +38,9 @@ export const tnoise = (x: number, y: number) => table[((Math.floor(y) & 255) << 
 
 export const labelClear = (calm: number) => smooth(0.25, 0.6, calm)
 
-export type RGB = [number, number, number]
+type RGB = [number, number, number]
 export const hex = (h: string): RGB => [Number.parseInt(h.slice(1, 3), 16), Number.parseInt(h.slice(3, 5), 16), Number.parseInt(h.slice(5, 7), 16)]
 export const pack = (c: RGB) => ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0
-export const mixRGB = (a: RGB, b: RGB, t: number): RGB => [
-  Math.round(a[0] + (b[0] - a[0]) * t),
-  Math.round(a[1] + (b[1] - a[1]) * t),
-  Math.round(a[2] + (b[2] - a[2]) * t),
-]
-
 export const mixPacked = (a: number, b: number, t: number) => {
   const ar = a & 255, ag = (a >>> 8) & 255, ab = (a >>> 16) & 255
   const br = b & 255, bg = (b >>> 8) & 255, bb = (b >>> 16) & 255

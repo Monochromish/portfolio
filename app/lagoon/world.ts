@@ -1,7 +1,8 @@
 import { bayer } from '../utils/dither'
+import { release } from './body'
 import { Manta, type Patch, type Senses } from './manta'
-import { clamp, hash2, labelClear, mixPacked, pack, seeded, smooth, tnoise } from './math'
-import { DAY, NIGHT, type Palette } from './palette'
+import { clamp, hash2, labelClear, mixPacked, seeded, smooth, tnoise } from './math'
+import { DAY, NIGHT, SINKS, type Palette } from './palette'
 
 interface Grain { x: number, y: number, vx: number, vy: number, hx: number, hy: number, dart: number, life: number, glow: number, patch: Patch }
 interface Ripple { x: number, y: number, t: number, scale: number }
@@ -67,7 +68,7 @@ function labelBoxes(el: Element) {
     range.selectNodeContents(node)
     boxes.push(...range.getClientRects())
   }
-  for (const icon of el.querySelectorAll('[class*="i-site-"]')) boxes.push(...icon.getClientRects())
+  for (const icon of el.querySelectorAll('[class*="i-site-"], svg')) boxes.push(...icon.getClientRects())
   return boxes.map(r => new DOMRect(r.x - 2, r.y - 2, r.width + 4, r.height + 4))
 }
 const MAX_CELLS = 105_000
@@ -92,7 +93,10 @@ export class Lagoon {
   private fb!: Uint32Array
   private base!: Uint32Array
   private ground!: Uint32Array
+  private deepBase!: Uint32Array
+  private deepGround!: Uint32Array
   private owner!: Uint8Array
+  private shaded!: Uint32Array
   private mod!: Float32Array
   private eHalf = new Float32Array(0)
   private hw = 0
@@ -105,6 +109,8 @@ export class Lagoon {
   private warpSum = new Float32Array(0)
   private warpDiff = new Float32Array(0)
   private frameMs = 0
+  private freshMs = 0
+  private offer = 0
   private half = false
   private slowFor = 0
   private fastFor = 0
@@ -214,7 +220,10 @@ export class Lagoon {
     this.fb = new Uint32Array(this.frame.data.buffer)
     this.base = new Uint32Array(W * H)
     this.ground = new Uint32Array(W * H)
+    this.deepBase = new Uint32Array(W * H)
+    this.deepGround = new Uint32Array(W * H)
     this.owner = new Uint8Array(W * H)
+    this.shaded = new Uint32Array(W * H)
     this.mod = new Float32Array(W * H)
     this.calm = new Float32Array(W * H)
     this.calmText = new Float32Array(W * H)
@@ -248,6 +257,7 @@ export class Lagoon {
         const k = Math.min(3, i + (f > th ? 1 : 0))
         const idx = y * W + x
         this.base[idx] = pal.water[k]!
+        this.deepBase[idx] = pal.water[Math.max(0, k - 1)]!
         this.mod[idx] = (0.75 + 0.25 * (1 - depth)) * (0.65 + 0.35 * tnoise(x * 0.3, y * 0.3))
       }
     }
@@ -289,10 +299,11 @@ export class Lagoon {
   }
 
   private paintGround() {
-    const { base, calm, ground, pal } = this
+    const { base, deepBase, calm, ground, deepGround, pal } = this
     for (let i = 0; i < ground.length; i++) {
       const q = calm[i]!
       ground[i] = q > 0.004 ? mixPacked(base[i]!, pal.calm, Math.min(1, q / 0.9) * pal.calmLift) : base[i]!
+      deepGround[i] = q > 0.004 ? mixPacked(deepBase[i]!, pal.calm, Math.min(1, q / 0.9) * pal.calmLift) : deepBase[i]!
     }
     const rows = Math.min(this.H, 6)
     let r = 0, g = 0, b = 0
@@ -410,6 +421,7 @@ export class Lagoon {
     cancelAnimationFrame(this.raf)
     clearTimeout(this.calmTimer)
     this.ro.disconnect()
+    release()
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.remember()
   }
@@ -574,7 +586,7 @@ export class Lagoon {
     for (const m of this.mantas) {
       if (!m.splash) continue
       m.splash = false
-      // the wings are widest 0.11 body lengths behind the center (Manta.halfSpan)
+      // the wings are widest 0.11 body lengths behind the center (U_TIP in body.ts)
       const c = Math.cos(m.heading), s = Math.sin(m.heading), a = -0.11 * m.L, w = m.S * m.L
       this.ripples.push(
         { x: m.x, y: m.y, t: this.t, scale: 1.25 },
@@ -690,17 +702,23 @@ export class Lagoon {
     // dt 0 draws every body settled
     const dt = this.running ? this.t - this.drawnT : 0
     this.drawnT = this.t
-    for (const m of order) m.raster(W, H, pal, this.ground, this.light, this.calmText, this.calmChrome, night, dt)
+    let spare = true
+    for (let k = 0; k < order.length; k++) {
+      if (order[(k + this.offer) % order.length]!.raster(W, H, pal, this.deepGround, this.light, this.calmText, this.calmChrome, night, this.t, dt, spare)) spare = false
+    }
+    this.offer++
     for (const m of order) {
       const o = m.shadowOffset(night)
+      const ox = Math.round(m.x) + o.x, oy = Math.round(m.y) + o.y
       const strength = pal.shadowStrength
+      const s = Math.floor(m.sink), f = m.sink - s
       const cast = (x: number, y: number) => {
         if (x < 0 || y < 0 || x >= W || y >= H) return
         if (strength < 1 && bayer(x, y) > strength) return
-        const i = y * W + x
-        const shade = pal.shadow[bayer(x, y) > 0.35 ? 0 : 1]!
-        const ghost = Math.max(m.dive, labelClear(this.calmChrome[i]!) * 0.85, smooth(0.35, 0.82, this.calmText[i]!) * 0.95)
-        fb[i] = ghost > 0.01 ? mixPacked(shade, this.ground[i]!, ghost) : shade
+        const i = y * W + x, th = bayer(x - ox, y - oy)
+        if (Math.max(labelClear(this.calmChrome[i]!), smooth(0.35, 0.82, this.calmText[i]!)) > th) return
+        const step = s + (f > th ? 1 : 0)
+        if (step < SINKS) fb[i] = pal.shadow[step]![bayer(x, y) > 0.35 ? 0 : 1]!
       }
       for (let k = 0; k < m.count; k++) {
         const idx = m.cells[k]!
@@ -712,28 +730,30 @@ export class Lagoon {
       }
     }
     for (const g of this.grains) this.drawGrain(g)
-    const owner = this.owner
+    const { owner, shaded } = this
     owner.fill(0)
     order.forEach((m, rank) => {
       for (let k = 0; k < m.count; k++) {
         const idx = m.cells[k]!
         fb[idx] = m.colors[k]!
+        shaded[idx] = m.shades[k]!
         owner[idx] = rank + 1
       }
     })
-    const backShade = pack(pal.back[0]!)
     for (let rank = 1; rank < order.length; rank++) {
       const m = order[rank]!
       const o = m.shadowOffset(night)
+      const ox = Math.round(m.x) + o.x, oy = Math.round(m.y) + o.y
+      const me = rank + 1
       const onto = (x: number, y: number) => {
         if (x < 0 || y < 0 || x >= W || y >= H) return
         const j = y * W + x
         const below = owner[j]!
         if (below === 0 || below > rank) return
+        if ((x > 0 && owner[j - 1] === me) || (x < W - 1 && owner[j + 1] === me) || (y > 0 && owner[j - W] === me) || (y < H - 1 && owner[j + W] === me)) return
         if (pal.shadowStrength < 1 && bayer(x, y) > pal.shadowStrength) return
-        const fade = (1 - Math.max(m.dive, order[below - 1]!.dive))
-          * (1 - Math.max(labelClear(this.calmChrome[j]!) * 0.85, smooth(0.35, 0.82, this.calmText[j]!) * 0.95))
-        if (fade > 0.05) fb[j] = mixPacked(fb[j]!, backShade, 0.5 * fade)
+        const fade = (1 - m.sink / SINKS) * (1 - Math.max(labelClear(this.calmChrome[j]!), smooth(0.35, 0.82, this.calmText[j]!)))
+        if (fade > bayer(x - ox, y - oy)) fb[j] = shaded[j]!
       }
       for (let k = 0; k < m.count; k++) {
         const idx = m.cells[k]!
@@ -744,7 +764,7 @@ export class Lagoon {
         onto(j % W, Math.floor(j / W))
       }
     }
-    for (const m of order) {
+    order.forEach((m, rank) => {
       // the mark pops in once the angry manta is clear of the page's text and the calm water around it, and stays
       if (m.madAt >= 0 && this.t >= m.madAt && m.veinAt < 0) {
         let under = false
@@ -752,15 +772,23 @@ export class Lagoon {
         if (!under) m.veinAt = this.t
       }
       const size = m.vein(this.t)
-      if (size) this.drawVein(m, size)
+      if (size) this.drawVein(m, rank, size)
       const asleep = m.zzz(this.t)
-      if (asleep >= 0 && night) this.drawZzz(m, asleep)
-    }
+      if (asleep >= 0 && night) this.drawZzz(m, rank, asleep)
+    })
     this.ctx.putImageData(this.frame, 0, 0)
-    this.frameMs += (performance.now() - t0 - this.frameMs) * 0.1
+    const ms = performance.now() - t0
+    this.frameMs += (ms - this.frameMs) * 0.1
+    if (!spare) this.freshMs += (ms - this.freshMs) * 0.1
   }
 
-  private drawVein(m: Manta, frame: number) {
+  private markShows(m: Manta, rank: number, x: number, y: number) {
+    const i = y * this.W + x
+    return this.owner[i]! <= rank + 1 && this.calmText[i]! <= 0.5
+      && Math.max(m.sink / SINKS, labelClear(this.calmChrome[i]!)) <= bayer(x - Math.round(m.x), y - Math.round(m.y))
+  }
+
+  private drawVein(m: Manta, rank: number, frame: number) {
     const { W, H, fb } = this
     const cells = VEINS[frame - 1]!
     // on the forehead between the eyes, 0.28 body lengths ahead of the center
@@ -772,13 +800,12 @@ export class Lagoon {
     for (let k = 0; k < cells.length; k += 3) {
       const x = fx + shake + cells[k]!, y = fy + bob + cells[k + 1]!
       if (x < 0 || y < 0 || x >= W || y >= H) continue
-      const i = y * W + x
-      if (this.calmText[i]! <= 0.5) fb[i] = cells[k + 2] ? this.pal.veinShine : this.pal.vein
+      if (this.markShows(m, rank, x, y)) fb[y * W + x] = cells[k + 2] ? this.pal.veinShine : this.pal.vein
     }
   }
 
   // a second into a nap, z Z Z pop in 0.6 s apart up and to the right of the head, bob, and clear together every 2.4 s
-  private drawZzz(m: Manta, asleep: number) {
+  private drawZzz(m: Manta, rank: number, asleep: number) {
     if (asleep < 1) return
     const { W, H, fb } = this
     const head = m.mouth()
@@ -791,8 +818,7 @@ export class Lagoon {
         for (let gx = 0; gx < glyph[gy]!.length; gx++) {
           const x = x0 + gx, y = y0 + gy
           if (glyph[gy]![gx] !== '#' || x < 0 || y < 0 || x >= W || y >= H) continue
-          const i = y * W + x
-          if (this.calmText[i]! <= 0.5) fb[i] = this.pal.doze
+          if (this.markShows(m, rank, x, y)) fb[y * W + x] = this.pal.doze
         }
       }
     }
@@ -877,8 +903,9 @@ export class Lagoon {
       steps++
     }
     if (steps === 4) this.acc = 0
-    this.slowFor = this.frameMs > 14 ? this.slowFor + dt : 0
-    this.fastFor = this.frameMs < 6 ? this.fastFor + dt : 0
+    const cost = Math.max(this.frameMs, this.freshMs)
+    this.slowFor = cost > 14 ? this.slowFor + dt : 0
+    this.fastFor = cost < 10 ? this.fastFor + dt : 0
     if (this.slowFor > 1) this.half = true
     else if (this.fastFor > 10) this.half = false
     if (steps) {
