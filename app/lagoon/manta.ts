@@ -1,7 +1,7 @@
 import { bayer } from '../utils/dither'
 import { Drawing, inside, type Mark } from './body'
 import { clamp, labelClear, smooth, wrapAngle } from './math'
-import { SINKS, type Palette } from './palette'
+import { SINKS } from './palette'
 
 export interface Patch {
   x: number
@@ -58,9 +58,16 @@ export class Manta {
   wander = 0
   full = 0
   cells = new Int32Array(0)
+  // per cell: the water a sunk cell shows (0 while the body still shows there), its tone slot and its sink value
   colors = new Uint32Array(0)
-  shades = new Uint32Array(0)
+  slots = new Uint8Array(0)
+  sinks = new Float32Array(0)
   count = 0
+  bodyCount = 0
+  ox = 0
+  oy = 0
+  // every cell's sink value weighted by its place in eights
+  sinkSum = 0
   edge = new Int32Array(0)
   edgeCount = 0
   private dive = 0
@@ -109,6 +116,14 @@ export class Manta {
     }
   }
 
+  get sprite() {
+    return this.drawing.sprite
+  }
+
+  get level() {
+    return this.drawing.level
+  }
+
   rim(): [number, number][] {
     const points: [number, number][] = []
     for (let k = 0; k < this.outline.length; k += 2) points.push([this.outline[k]! * this.L, this.outline[k + 1]! * this.L])
@@ -125,16 +140,18 @@ export class Manta {
     return { x: Math.round(k * 0.55), y: Math.round(k) }
   }
 
-  raster(W: number, H: number, pal: Palette, sunk: Uint32Array, light: number[], calm: Float32Array, chrome: Float32Array, night: boolean, t: number, dt: number, spare: boolean) {
+  raster(W: number, H: number, sunk: Uint32Array, light: number[], calm: Float32Array, chrome: Float32Array, night: boolean, t: number, dt: number, spare: boolean) {
     const fresh = this.drawing.update(this, light, night, t, spare)
     const { xy, tone, body, held } = this.drawing.sprite!
-    const skin = pal.skin[this.drawing.level]!
     const o = this.shadowOffset(night)
     const ox = Math.round(this.x), oy = Math.round(this.y)
+    this.ox = ox
+    this.oy = oy
     if (this.cells.length < tone.length) {
       this.cells = new Int32Array(tone.length)
       this.colors = new Uint32Array(tone.length)
-      this.shades = new Uint32Array(tone.length)
+      this.slots = new Uint8Array(tone.length)
+      this.sinks = new Float32Array(tone.length)
       this.edge = new Int32Array(tone.length)
     }
     const c = Math.cos(this.heading), s = Math.sin(this.heading), L = this.L
@@ -161,7 +178,10 @@ export class Manta {
     else if (dt <= 0 || Math.abs(want - this.sink) > 0.65) this.sink = Math.round(want)
     let n = 0
     let e = 0
+    let sum = 0
+    this.bodyCount = -1
     for (let k = 0; k < tone.length; k++) {
+      if (k === body) this.bodyCount = n
       const x = ox + xy[2 * k]!, y = oy + xy[2 * k + 1]!
       if (x >= W || y >= H) continue
       // body just past the top or left edge still casts a shadow onto the screen
@@ -177,20 +197,16 @@ export class Manta {
         if (lag) q = Math.max(q, smooth(0.84, 0.89, calm[idx]!))
       }
       const p = Math.max(this.sink, q * SINKS), i = Math.floor(p)
-      const step = i + (p - i > bayer(x - ox, y - oy) ? 1 : 0)
-      if (step >= SINKS) {
-        this.colors[n] = sunk[idx]!
-        this.shades[n] = sunk[idx]!
-      }
-      else {
-        const sl = tone[k]!
-        this.colors[n] = skin[step]![sl]!
-        this.shades[n] = skin[step]![pal.shade[sl]!]!
-      }
+      this.colors[n] = i + (p - i > bayer(x - ox, y - oy) ? 1 : 0) >= SINKS ? sunk[idx]! : 0
+      this.slots[n] = tone[k]!
+      this.sinks[n] = p
       this.cells[n] = idx
+      sum += p * ((n & 7) + 1)
       n++
     }
     this.count = n
+    if (this.bodyCount < 0) this.bodyCount = n
+    this.sinkSum = sum
     this.edgeCount = e
     return fresh
   }

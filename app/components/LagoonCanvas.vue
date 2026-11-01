@@ -5,6 +5,7 @@ const props = defineProps<{ covered: boolean }>()
 
 const layer = ref<HTMLDivElement>()
 const canvas = ref<HTMLCanvasElement>()
+const tiles = ref<HTMLCanvasElement>()
 const paused = ref(false)
 const reduced = ref(false)
 let lagoon: Lagoon | null = null
@@ -72,7 +73,7 @@ watch(() => props.covered, (c) => {
 
 onMounted(() => {
   host = layer.value?.parentElement ?? null
-  if (!canvas.value || !host) throw new Error('LagoonCanvas must sit inside its hero element')
+  if (!canvas.value || !tiles.value || !host) throw new Error('LagoonCanvas must sit inside its hero element')
   reduced.value = matchMedia('(prefers-reduced-motion: reduce)').matches
   try {
     paused.value = sessionStorage.getItem('lagoon-paused') === '1'
@@ -84,6 +85,7 @@ onMounted(() => {
   lagoon = new Lagoon(canvas.value, host, {
     night: root.classList.contains('dark'),
     reduced: reduced.value,
+    tiles: tiles.value,
     onTop: (color, night) => { top.value = { ...top.value, [night ? 'dark' : 'light']: color } },
     onSplash: () => document.querySelector('[data-theme-toggle]')?.animate(
       [{ transform: 'rotate(0)' }, { transform: 'rotate(-14deg)' }, { transform: 'rotate(9deg)' }, { transform: 'rotate(-4deg)' }, { transform: 'rotate(0)' }],
@@ -126,6 +128,7 @@ defineExpose({ relayout: () => lagoon?.relayout() })
 <template>
   <div ref="layer" class="layer">
     <canvas ref="canvas" class="lagoon" aria-hidden="true" />
+    <canvas ref="tiles" class="tiles" aria-hidden="true" />
   <button
     v-if="!reduced"
     type="button"
@@ -150,6 +153,12 @@ defineExpose({ relayout: () => lagoon?.relayout() })
   inset: 0 auto auto 0;
   image-rendering: pixelated;
   touch-action: pan-y pinch-zoom;
+}
+.tiles {
+  position: absolute;
+  inset: 0 auto auto 0;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 .pause {
   position: absolute;

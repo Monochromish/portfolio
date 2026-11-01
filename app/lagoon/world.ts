@@ -1,55 +1,13 @@
 import { bayer } from '../utils/dither'
 import { release } from './body'
+import { DOZE, FACE_X, FACE_Y, MASKS } from './face'
 import { Manta, type Patch, type Senses } from './manta'
 import { clamp, hash2, labelClear, mixPacked, seeded, smooth, tnoise } from './math'
+import { DEEP, Mosaic } from './mosaic'
 import { DAY, NIGHT, SINKS, type Palette } from './palette'
 
 interface Grain { x: number, y: number, vx: number, vy: number, hx: number, hy: number, dart: number, life: number, glow: number, patch: Patch }
 interface Ripple { x: number, y: number, t: number, scale: number }
-
-// the anger mark at 9 and 15 cells; o marks the shine on edges that face the light
-const VEIN_SMALL = [
-  '..#...#..',
-  '..#####..',
-  '##.###.##',
-  '.##...##.',
-  '.##...##.',
-  '.##...##.',
-  '##.###.##',
-  '..#####..',
-  '..#...#..',
-]
-const VEIN_FULL = [
-  '...#.......#...',
-  '...##.....##...',
-  '....#oo####....',
-  '##..#######..##',
-  '.###.#####.###.',
-  '..o##.....o##..',
-  '..o##.....o##..',
-  '..###.....###..',
-  '..###.....###..',
-  '..###.....###..',
-  '.###.oo###.###.',
-  '##..#######..##',
-  '....#######....',
-  '...##.....##...',
-  '...#.......#...',
-]
-const veinCells = (rows: string[]) => {
-  const h = (rows.length - 1) / 2
-  return rows.flatMap((row, y) => [...row].flatMap((ch, x) => ch === '.' ? [] : [x - h, y - h, ch === 'o' ? 1 : 0]))
-}
-const swell = (cells: number[]) => cells.map((v, i) => {
-  const dx = cells[i - (i % 3)]!, dy = cells[i - (i % 3) + 1]!
-  if (i % 3 === 0) return Math.abs(dy) >= Math.abs(dx) ? v : v + Math.sign(dx)
-  if (i % 3 === 1) return Math.abs(dy) >= Math.abs(dx) ? v + Math.sign(dy) : v
-  return v
-})
-const VEINS = [VEIN_SMALL, VEIN_FULL].map(veinCells)
-VEINS.push(swell(VEINS[1]!))
-
-const ZEDS = [['####', '..#.', '.#..', '####'], ['#####', '...#.', '..#..', '.#...', '#####'], ['######', '....#.', '...#..', '..#...', '.#....', '######']]
 
 const STEP = 1 / 60
 const VORONOI = 30
@@ -78,6 +36,7 @@ const MEMORY_KEY = 'lagoon'
 export interface LagoonOptions {
   night: boolean
   reduced: boolean
+  tiles: HTMLCanvasElement
   onTop?: (color: string, night: boolean) => void
   onSplash?: () => void
 }
@@ -95,9 +54,8 @@ export class Lagoon {
   private ground!: Uint32Array
   private deepBase!: Uint32Array
   private deepGround!: Uint32Array
-  private owner!: Uint8Array
-  private shaded!: Uint32Array
   private mod!: Float32Array
+  private mosaic: Mosaic
   private eHalf = new Float32Array(0)
   private hw = 0
   private hh = 0
@@ -146,12 +104,14 @@ export class Lagoon {
   private light: number[]
   private calmEls: Element[] = []
   private ro: ResizeObserver
+  private ratio: MediaQueryList | null = null
   private calmTimer = 0
   private onTop?: (color: string, night: boolean) => void
   private onSplash?: () => void
 
   constructor(private canvas: HTMLCanvasElement, private host: HTMLElement, opts: LagoonOptions) {
     this.ctx = canvas.getContext('2d', { alpha: false })!
+    this.mosaic = new Mosaic(opts.tiles)
     this.onTop = opts.onTop
     this.onSplash = opts.onSplash
     this.night = opts.night
@@ -162,6 +122,7 @@ export class Lagoon {
     this.recall()
     this.ro = new ResizeObserver(() => this.resize())
     this.ro.observe(host)
+    this.watchRatio()
     this.resize()
     this.populate()
     if (opts.reduced) for (let i = 0; i < 60 * 3; i++) this.step(STEP)
@@ -197,12 +158,17 @@ export class Lagoon {
   private resize() {
     const r = this.host.getBoundingClientRect()
     if (r.width === 0 || r.height === 0) return
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2)
+    this.dpr = window.devicePixelRatio || 1
     const sw = window.screen.width, sh = window.screen.height
     this.cellCss = Math.max(sw < 640 ? 3 : 4, Math.min(10, Math.round(Math.sqrt(Math.max(sw * sh, r.width * r.height) / MAX_CELLS))))
     this.K = Math.max(2, Math.round(this.cellCss * this.dpr))
     const W = Math.ceil(r.width * this.dpr / this.K), H = Math.ceil(r.height * this.dpr / this.K)
-    if (W === this.W && H === this.H && this.canvas.width === W) { this.measureCalm(); return }
+    if (W === this.W && H === this.H && this.canvas.width === W) {
+      const sized = this.mosaic.resize(W, H, this.K, this.dpr)
+      this.measureCalm()
+      if (sized) this.draw()
+      return
+    }
     if (this.W && this.H) {
       const kx = W / this.W, ky = H / this.H
       for (const o of [...this.mantas, ...this.patches, ...this.grains, ...this.ripples]) {
@@ -222,9 +188,8 @@ export class Lagoon {
     this.ground = new Uint32Array(W * H)
     this.deepBase = new Uint32Array(W * H)
     this.deepGround = new Uint32Array(W * H)
-    this.owner = new Uint8Array(W * H)
-    this.shaded = new Uint32Array(W * H)
     this.mod = new Float32Array(W * H)
+    this.mosaic.resize(W, H, this.K, this.dpr)
     this.calm = new Float32Array(W * H)
     this.calmText = new Float32Array(W * H)
     this.calmChrome = new Float32Array(W * H)
@@ -295,6 +260,7 @@ export class Lagoon {
         }
       }
     }
+    this.mosaic.measure(this.calmText, this.calmChrome)
     this.paintGround()
   }
 
@@ -425,12 +391,25 @@ export class Lagoon {
     cancelAnimationFrame(this.raf)
     clearTimeout(this.calmTimer)
     this.ro.disconnect()
+    this.ratio?.removeEventListener('change', this.onRatio)
+    this.mosaic.destroy()
     release()
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.remember()
   }
 
   private onVisibility = () => this.sync()
+
+  private watchRatio() {
+    this.ratio?.removeEventListener('change', this.onRatio)
+    this.ratio = matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`)
+    this.ratio.addEventListener('change', this.onRatio)
+  }
+
+  private onRatio = () => {
+    this.watchRatio()
+    this.resize()
+  }
 
   relayout() {
     clearTimeout(this.calmTimer)
@@ -708,122 +687,69 @@ export class Lagoon {
     this.drawnT = this.t
     let spare = true
     for (let k = 0; k < order.length; k++) {
-      if (order[(k + this.offer) % order.length]!.raster(W, H, pal, this.deepGround, this.light, this.calmText, this.calmChrome, night, this.t, dt, spare)) spare = false
+      if (order[(k + this.offer) % order.length]!.raster(W, H, this.deepGround, this.light, this.calmText, this.calmChrome, night, this.t, dt, spare)) spare = false
     }
     this.offer++
     for (const m of order) {
-      const o = m.shadowOffset(night)
-      const ox = Math.round(m.x) + o.x, oy = Math.round(m.y) + o.y
-      const strength = pal.shadowStrength
-      const s = Math.floor(m.sink), f = m.sink - s
-      const cast = (x: number, y: number) => {
-        if (x < 0 || y < 0 || x >= W || y >= H) return
-        if (strength < 1 && bayer(x, y) > strength) return
-        const i = y * W + x, th = bayer(x - ox, y - oy)
-        if (Math.max(labelClear(this.calmChrome[i]!), smooth(0.35, 0.82, this.calmText[i]!)) > th) return
-        const step = s + (f > th ? 1 : 0)
-        if (step < SINKS) fb[i] = pal.shadow[step]![bayer(x, y) > 0.35 ? 0 : 1]!
-      }
-      for (let k = 0; k < m.count; k++) {
-        const idx = m.cells[k]!
-        cast((idx % W) + o.x, Math.floor(idx / W) + o.y)
-      }
-      for (let k = 0; k < m.edgeCount; k++) {
-        const i = m.edge[k]!
-        cast(i % W, Math.floor(i / W))
-      }
+      this.mosaic.reduce(m, pal, night)
+      this.castShadow(m)
     }
     for (const g of this.grains) this.drawGrain(g)
-    const { owner, shaded } = this
-    owner.fill(0)
-    order.forEach((m, rank) => {
-      for (let k = 0; k < m.count; k++) {
-        const idx = m.cells[k]!
-        fb[idx] = m.colors[k]!
-        shaded[idx] = m.shades[k]!
-        owner[idx] = rank + 1
-      }
-    })
-    for (let rank = 1; rank < order.length; rank++) {
-      const m = order[rank]!
-      const o = m.shadowOffset(night)
-      const ox = Math.round(m.x) + o.x, oy = Math.round(m.y) + o.y
-      const me = rank + 1
-      const onto = (x: number, y: number) => {
-        if (x < 0 || y < 0 || x >= W || y >= H) return
-        const j = y * W + x
-        const below = owner[j]!
-        if (below === 0 || below > rank) return
-        if ((x > 0 && owner[j - 1] === me) || (x < W - 1 && owner[j + 1] === me) || (y > 0 && owner[j - W] === me) || (y < H - 1 && owner[j + W] === me)) return
-        if (pal.shadowStrength < 1 && bayer(x, y) > pal.shadowStrength) return
-        const fade = (1 - m.sink / SINKS) * (1 - Math.max(labelClear(this.calmChrome[j]!), smooth(0.35, 0.82, this.calmText[j]!)))
-        if (fade > bayer(x - ox, y - oy)) fb[j] = shaded[j]!
-      }
-      for (let k = 0; k < m.count; k++) {
-        const idx = m.cells[k]!
-        onto((idx % W) + o.x, Math.floor(idx / W) + o.y)
-      }
-      for (let k = 0; k < m.edgeCount; k++) {
-        const j = m.edge[k]!
-        onto(j % W, Math.floor(j / W))
-      }
-    }
-    order.forEach((m, rank) => {
+    for (const m of order) {
+      for (let k = 0; k < m.count; k++) if (m.colors[k]) fb[m.cells[k]!] = m.colors[k]!
+      const asleep = night ? m.zzz(this.t) : -1
+      if (asleep >= 1) this.drawZzz(m, asleep)
       // the mark pops in once the angry manta is clear of the page's text and the calm water around it, and stays
       if (m.madAt >= 0 && this.t >= m.madAt && m.veinAt < 0) {
         let under = false
         for (let k = 0; k < m.count && !under; k++) under = this.calm[m.cells[k]!]! > 0.05
         if (!under) m.veinAt = this.t
       }
-      const size = m.vein(this.t)
-      if (size) this.drawVein(m, rank, size)
-      const asleep = m.zzz(this.t)
-      if (asleep >= 0 && night) this.drawZzz(m, rank, asleep)
-    })
+    }
+    this.mosaic.compose(order, this.t, !this.running)
     this.ctx.putImageData(this.frame, 0, 0)
     const ms = performance.now() - t0
     this.frameMs += (ms - this.frameMs) * 0.1
     if (!spare) this.freshMs += (ms - this.freshMs) * 0.1
   }
 
-  private markShows(m: Manta, rank: number, x: number, y: number) {
-    const i = y * this.W + x
-    return this.owner[i]! <= rank + 1 && this.calmText[i]! <= 0.5
-      && Math.max(m.sink / SINKS, labelClear(this.calmChrome[i]!)) <= bayer(x - Math.round(m.x), y - Math.round(m.y))
-  }
-
-  private drawVein(m: Manta, rank: number, frame: number) {
-    const { W, H, fb } = this
-    const cells = VEINS[frame - 1]!
-    // on the forehead between the eyes, 0.28 body lengths ahead of the center
-    const ahead = 0.28 * m.L
-    const fx = Math.round(m.x + Math.cos(m.heading) * ahead), fy = Math.round(m.y + Math.sin(m.heading) * ahead)
-    // shakes a cell either way on the slap, otherwise bobs a cell up and down about 1.4 times a second
-    const shake = m.madPhase === 'slap' ? (Math.floor(this.t * 24) % 2) * 2 - 1 : 0
-    const bob = m.madPhase === 'slap' ? 0 : Math.round(Math.sin(this.t * 8.8))
-    for (let k = 0; k < cells.length; k += 3) {
-      const x = fx + shake + cells[k]!, y = fy + bob + cells[k + 1]!
-      if (x < 0 || y < 0 || x >= W || y >= H) continue
-      if (this.markShows(m, rank, x, y)) fb[y * W + x] = cells[k + 2] ? this.pal.veinShine : this.pal.vein
+  private castShadow(m: Manta) {
+    const { W, H, fb, pal, ground } = this
+    const sh = this.mosaic.shadowOf(m), cols = this.mosaic.cols
+    const o = m.shadowOffset(this.night), ox = Math.round(m.x) + o.x, oy = Math.round(m.y) + o.y
+    const s = Math.floor(m.sink), f = m.sink - s
+    for (let k = 0; k < sh.shade; k++) {
+      const at = sh.shadeAt[k]!, kind = sh.shadeKind[k]!, i = at % cols, j = (at - i) / cols
+      const pale = kind & DEEP ? 0 : 1, mix = pal.shadowMix[pale] ?? 0
+      for (let q = 0; q < 9; q++) {
+        if (!(kind & (1 << q))) continue
+        const x = 3 * i + (q % 3), y = 3 * j + ((q / 3) | 0)
+        if (x >= W || y >= H) continue
+        const idx = y * W + x, th = bayer(x - ox, y - oy), step = s + (f > th ? 1 : 0)
+        if (step >= SINKS || Math.max(labelClear(this.calmChrome[idx]!), smooth(0.35, 0.82, this.calmText[idx]!)) > th) continue
+        const tone = pal.shadow[step]!
+        fb[idx] = mix ? mixPacked(ground[idx]!, tone[0]!, mix) : tone[pale]!
+      }
     }
   }
 
-  // a second into a nap, z Z Z pop in 0.6 s apart up and to the right of the head, bob, and clear together every 2.4 s
-  private drawZzz(m: Manta, rank: number, asleep: number) {
-    if (asleep < 1) return
+  // a second into a nap, z Z Z pop in 0.6 s apart up and to the right of the head, a cell a dot, bob, and clear together
+  // every 2.4 s
+  private drawZzz(m: Manta, asleep: number) {
     const { W, H, fb } = this
-    const head = m.mouth()
-    const cycle = (asleep - 1) % 2.4
-    for (let j = 0; j < ZEDS.length; j++) {
+    const head = m.mouth(), cycle = (asleep - 1) % 2.4
+    const ox = Math.round(m.x), oy = Math.round(m.y)
+    for (let j = 0; j < DOZE.length; j++) {
       if (cycle < j * 0.6) continue
-      const glyph = ZEDS[j]!
-      const x0 = Math.round(head.x + 4 + j * 6), y0 = Math.round(head.y - 8 - j * 7 + Math.sin((asleep + j * 0.7) * 3))
-      for (let gy = 0; gy < glyph.length; gy++) {
-        for (let gx = 0; gx < glyph[gy]!.length; gx++) {
-          const x = x0 + gx, y = y0 + gy
-          if (glyph[gy]![gx] !== '#' || x < 0 || y < 0 || x >= W || y >= H) continue
-          if (this.markShows(m, rank, x, y)) fb[y * W + x] = this.pal.doze
-        }
+      const g = DOZE[j]! * FACE_X * FACE_Y
+      const x0 = Math.round(head.x + 4 + j * 6), y0 = Math.round(head.y - 10 - j * 7 + Math.sin((asleep + j * 0.7) * 3))
+      for (let k = 0; k < FACE_X * FACE_Y; k++) {
+        if (!MASKS[g + k]) continue
+        const x = x0 + (k % FACE_X), y = y0 + ((k / FACE_X) | 0)
+        if (x < 0 || y < 0 || x >= W || y >= H) continue
+        const i = y * W + x
+        if (this.calmText[i]! > 0.5 || Math.max(m.sink / SINKS, labelClear(this.calmChrome[i]!)) > bayer(x - ox, y - oy)) continue
+        fb[i] = this.pal.doze
       }
     }
   }
@@ -897,6 +823,7 @@ export class Lagoon {
 
   private tick = (now: number) => {
     if (!this.running) return
+    if ((window.devicePixelRatio || 1) !== this.dpr) this.onRatio()
     const dt = Math.min(0.1, (now - this.last) / 1000)
     this.last = now
     this.acc += dt
