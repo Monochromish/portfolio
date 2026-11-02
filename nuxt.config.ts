@@ -40,7 +40,6 @@ export default defineNuxtConfig({
     '/icon-32.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/icon-192.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/apple-touch-icon.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
-    '/og.png': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/Himanshu_Adwani_Resume.pdf': { headers: { 'cache-control': 'public, max-age=3600, stale-while-revalidate=86400' } },
     '/': { headers: { 'cache-control': 'private, no-cache', 'vary': 'cookie' } },
     '/stickers': { headers: { 'cache-control': 'private, no-cache', 'vary': 'cookie' } },

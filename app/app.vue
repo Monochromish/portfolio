@@ -3,8 +3,6 @@ const site = 'https://himanshu.sh'
 const { alias, name } = useIdentity()
 const origin = alias ? useRequestURL().origin : site
 const description = `${alias ? 'Monochromish (Himanshu Adwani)' : 'Himanshu Adwani (Isaiah)'}: senior lead developer at Cider, the Apple Music client, and computer science student at Penn State.`
-const ogImage = `${origin}/og.png`
-const ogAlt = 'A pixel lagoon seen from above with manta rays'
 const avatar = 'https://avatars.githubusercontent.com/u/79590499?v=4'
 
 useSeoMeta({
@@ -12,13 +10,9 @@ useSeoMeta({
   description,
   ogTitle: name,
   ogDescription: description,
-  ogImage,
-  ogImageWidth: 1200,
-  ogImageHeight: 630,
-  ogImageAlt: ogAlt,
   ogType: 'website',
   ogUrl: origin,
-  twitterCard: 'summary_large_image',
+  twitterCard: 'summary',
 })
 
 useHead({
@@ -47,16 +41,12 @@ useHead({
 // a Discord component embed (docs.discord.com: Link previews, Component embeds)
 const embed = JSON.stringify({
   component: {
-    // container > section (text and the lagoon) > row of link buttons
+    // container > text > row of link buttons
     type: 17,
     accent_color: 0x57B9BF,
     spoiler: false,
     components: [
-      {
-        type: 9,
-        components: [{ type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` }],
-        accessory: { type: 11, media: { url: ogImage }, description: ogAlt },
-      },
+      { type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` },
       {
         type: 1,
         components: [
