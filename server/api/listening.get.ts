@@ -18,6 +18,7 @@ interface LastfmRecent {
 
 // grey-star placeholder Last.fm serves for missing artwork
 const NO_ART = '2a96cbd8b46e442fc41c2b86b821562f'
+const DISTINCT = 4
 const BACKOFF_MS = 60_000
 let failedAt = 0
 
@@ -27,12 +28,18 @@ export default defineCachedEventHandler(async (event): Promise<Track[]> => {
   if (Date.now() - failedAt < BACKOFF_MS) throw createError({ statusCode: 503, statusMessage: 'Last.fm failed recently, trying again shortly' })
   try {
     const url = new URL('https://ws.audioscrobbler.com/2.0/')
-    url.search = new URLSearchParams({ method: 'user.getrecenttracks', user: lastfmUser, api_key: lastfmApiKey, format: 'json', limit: '20' }).toString()
+    // 200 is the most Last.fm returns in one page: a song on repeat can fill a short page by itself
+    url.search = new URLSearchParams({ method: 'user.getrecenttracks', user: lastfmUser, api_key: lastfmApiKey, format: 'json', limit: '200' }).toString()
     const res = await fetch(url, { headers: { 'user-agent': 'himanshu.sh (+https://himanshu.sh)' }, signal: AbortSignal.timeout(5000) })
     const data = await res.json() as LastfmRecent
     if (!res.ok || !data.recenttracks) throw createError({ statusCode: 502, statusMessage: `Last.fm error ${data.error ?? res.status}: ${data.message ?? res.statusText}` })
-    // 20 leaves four different tracks after repeat plays fold into one row
-    return [data.recenttracks.track].flat().slice(0, 20).map((t) => {
+    // newest first, so a replayed song keeps only its latest play and never takes a second row
+    const heard = new Set<string>()
+    const distinct = [data.recenttracks.track].flat().filter((t) => {
+      const song = `${t.artist['#text']}\n${t.name}`.toLowerCase()
+      return !heard.has(song) && !!heard.add(song)
+    })
+    return distinct.slice(0, DISTINCT).map((t) => {
       const art = t.image.find(i => i.size === 'extralarge')?.['#text'] || ''
       return {
         title: t.name,
