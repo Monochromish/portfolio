@@ -1,6 +1,6 @@
 import { createError, getCookie, getRequestHeader, getRequestIP, getRouterParam, setCookie } from 'nuxt/server'
 import type { RequestEvent } from 'nuxt/server'
-import { MAX_BODY_BYTES, STICKER_TEMPLATES, isPlainObject, stickerProblem, stickerTemplate } from '#shared/guestbook'
+import { BOARD_ASPECT, MAX_BODY_BYTES, SETTLE_REACH, STICKER_TEMPLATES, isPlainObject, settleSticker, stickerProblem, stickerTemplate } from '#shared/guestbook'
 import type { GuestbookQueue, GuestbookRejection, GuestbookStatus, ModerationSticker, Placement, Sticker, StickerPage, StickerStroke } from '#shared/types'
 
 const FORM_TOKEN_RE = /^(\d{13})\.([\w-]{43})$/
@@ -235,6 +235,19 @@ export function checkSubmission(value: unknown): CheckedSubmission {
   const problem = stickerProblem(t, strokes)
   if (problem) throw guestbookError(400, 'invalid-sticker', problem)
   return { template: t.id, strokes: strokes as StickerStroke[], x: x as number, y: y as number, rot: rot as number, shareCountry, formToken, turnstileToken }
+}
+
+const NEARBY_MAX = 200
+
+// a sticker dropped right on another is moved beside it; pending ones count, since nobody can see those yet and they pile up most
+export async function settledPlace(template: string, drop: Placement): Promise<Placement> {
+  const t = stickerTemplate(template)
+  if (!t) return drop
+  const { rows } = await useDatabase().sql<{ rows: { template: string, x: number, y: number, rot: number | null }[] }>`SELECT template, x, y, rot FROM stickers
+    WHERE status != 'rejected' AND x BETWEEN ${drop.x - SETTLE_REACH} AND ${drop.x + SETTLE_REACH}
+      AND y BETWEEN ${drop.y - SETTLE_REACH * BOARD_ASPECT} AND ${drop.y + SETTLE_REACH * BOARD_ASPECT}
+    ORDER BY id DESC LIMIT ${NEARBY_MAX}`
+  return settleSticker(t, drop, rows.map(row => ({ ...row, rot: row.rot ?? 0 })))
 }
 
 const storedStrokes = (strokes: readonly StickerStroke[]) => JSON.stringify(strokes.map(s => [s.color, s.size, s.points]))

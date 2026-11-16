@@ -94,6 +94,9 @@ export interface GuestbookReceipt {
   status: 'pending'
   id: number
   country: string | null
+  // where it was put: the drop, or beside it when the drop would have hidden another sticker
+  x: number
+  y: number
 }
 
 export type GuestbookRejection =

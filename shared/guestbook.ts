@@ -1,4 +1,4 @@
-import type { StickerStroke } from './types'
+import type { Placement, StickerStroke } from './types'
 
 export const GUESTBOOK_TURNSTILE_ACTION = 'guestbook'
 
@@ -370,4 +370,55 @@ export function inkPaths(t: StickerTemplate, strokes: readonly StickerStroke[]):
 export function inkTransform(t: StickerTemplate) {
   const { cell } = stickerGrid(t)
   return `translate(${t.region.x} ${t.region.y}) scale(${cell})`
+}
+
+// the board is 3:2 and a sticker is a fifth of its width on every screen, so everyone sees the same board
+export const BOARD_ASPECT = 3 / 2
+export const STICKER_WIDTH = 0.2
+
+// half a sticker's height, as a share of the board's height
+export function stickerHalfHeight(t: StickerTemplate) {
+  const view = stickerView(t)
+  return STICKER_WIDTH * view.h / view.w * BOARD_ASPECT / 2
+}
+
+export function onBoard(t: StickerTemplate, x: number, y: number) {
+  const half = stickerHalfHeight(t)
+  return { x: Math.min(1 - STICKER_WIDTH / 2, Math.max(STICKER_WIDTH / 2, x)), y: Math.min(1 - half, Math.max(half, y)) }
+}
+
+// one sticker hides another when centres are within SAME board widths and tilts within SAME_TILT degrees
+const SAME = 0.03
+const SAME_TILT = 3
+// it moves aside by STEP board widths, a quarter of its own width, RINGS steps at most
+const STEP = 0.05
+const RINGS = 3
+// down and to the right first, the way papers are dealt onto a pile
+const SIDES: readonly (readonly [number, number])[] = [[1, 1], [1, 0], [0, 1], [-1, 1], [1, -1], [-1, 0], [0, -1], [-1, -1]]
+// stickers further than this from a drop, in board widths, cannot affect it
+export const SETTLE_REACH = 0.4
+
+export interface OnBoard extends Placement {
+  template: string
+}
+
+// where it was dropped, unless that hides one of `others`: then the nearest of 24 spots around it that hides none, or the drop itself when all are taken
+export function settleSticker(t: StickerTemplate, drop: Placement, others: readonly OnBoard[]): Placement {
+  const taken = others.flatMap((o) => {
+    const template = stickerTemplate(o.template)
+    return template && Math.abs(o.rot - drop.rot) < SAME_TILT ? [onBoard(template, o.x, o.y)] : []
+  })
+  // in board widths: the board is BOARD_ASPECT times wider than tall
+  const apart = (a: { x: number, y: number }, b: { x: number, y: number }) => Math.hypot(a.x - b.x, (a.y - b.y) / BOARD_ASPECT)
+  const hides = (spot: { x: number, y: number }) => taken.some(o => apart(spot, o) < SAME)
+  const start = onBoard(t, drop.x, drop.y)
+  if (!hides(start)) return drop
+  for (let ring = 1; ring <= RINGS; ring++) {
+    for (const [sx, sy] of SIDES) {
+      const spot = onBoard(t, start.x + sx * STEP * ring, start.y + sy * STEP * ring * BOARD_ASPECT)
+      // at the board's edge a step can land back where it started
+      if (apart(spot, start) >= SAME && !hides(spot)) return { x: Math.round(spot.x * 1e4) / 1e4, y: Math.round(spot.y * 1e4) / 1e4, rot: drop.rot }
+    }
+  }
+  return drop
 }

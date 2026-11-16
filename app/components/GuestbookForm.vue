@@ -291,7 +291,7 @@ async function post(place: Placement, shareCountry: boolean): Promise<string | n
     const submission: StickerSubmission = { template: t.id, strokes, ...place, shareCountry, website: website.value, formToken }
     if (siteKey) submission.turnstileToken = await passChallenge()
     const receipt = await $fetch<GuestbookReceipt>('/api/guestbook', { method: 'POST', body: submission })
-    emit('sent', { id: receipt.id, template: t.id, strokes, createdAt: Date.now(), ...place, country: receipt.country })
+    emit('sent', { id: receipt.id, template: t.id, strokes, createdAt: Date.now(), ...place, x: receipt.x, y: receipt.y, country: receipt.country })
     update(t.id, blank())
     picked.value = null
     notice.value = 'Stuck on. Everyone will see it soon.'

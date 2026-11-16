@@ -15,8 +15,9 @@ export default defineEventHandler(async (event): Promise<GuestbookReceipt> => {
   await checkQueue(asn)
   await verifyTurnstile(event, submission.turnstileToken, ip)
   const country = submission.shareCountry ? visitorCountry(event) : null
-  const { id, created } = await insertPendingSticker(submission.template, submission.strokes, submission, country, hashes, asn)
+  const place = await settledPlace(submission.template, submission)
+  const { id, created } = await insertPendingSticker(submission.template, submission.strokes, place, country, hashes, asn)
   await rememberSticker(event, id, created)
   setResponseStatus(event, 201)
-  return { status: 'pending', id, country }
+  return { status: 'pending', id, country, x: place.x, y: place.y }
 })
