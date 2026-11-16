@@ -58,13 +58,12 @@ export const projects: Project[] = [
       'Refactored the audio engine’s effects chain, fixing Dolby Atmos compatibility, clipping and memory leaks; in the Windows app, stopped WebView2 from painting while hidden, released leaked audio sessions and fixed menus on high-\u2060DPI screens.',
     ],
     stats: [
-      { value: 'Close to a million', label: 'users', note: 'cider-count' },
-      { value: '250,000+', label: 'on Flathub' },
+      { value: '250,000+', label: 'installs', note: 'cider-count' },
     ],
     links: [{ label: 'cider.sh', href: 'https://cider.sh' }],
     footnote: {
       id: 'cider-count',
-      text: 'An estimate. Cider’s license server counts each license once, by a hash, when it checks in. Only copies on the newer service report to it, so Cider v3 from the Microsoft Store is not in the count. The Flathub figure is Flathub’s own count of installs since March 2022, not counting updates. To check it, select Downloads/Month on',
+      text: 'Flathub’s own count of installs on Linux since March 2022, not counting updates. Installs on Windows and macOS are not in it. To check it, select Downloads/Month on',
       link: { label: 'Cider’s Flathub page', href: 'https://flathub.org/apps/sh.cider.Cider' },
     },
     field: '#b8354d',

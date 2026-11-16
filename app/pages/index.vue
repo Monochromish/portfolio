@@ -87,13 +87,14 @@ onBeforeUnmount(() => {
 
         <div class="about rise" data-field-calm>
           <p class="first">
-            I build <a class="text-link" href="https://cider.sh" rel="noopener">Cider</a>, the Apple&nbsp;Music client for Windows, macOS and Linux that close to a
-            million people use.<a class="mark" href="#cider-count" aria-label="How this is estimated">*</a> I study computer science at Penn&nbsp;State and
+            I build <a class="text-link" href="https://cider.sh" rel="noopener">Cider</a>, the Apple&nbsp;Music client for Windows, macOS and Linux, installed more
+            than 250,000 times.<a class="mark" href="#cider-count" aria-label="How this is counted">*</a> I study computer science at Penn&nbsp;State and
             graduate in May&nbsp;2028.
           </p>
           <p>
             I’m {{ alias ? 'Himanshu Adwani' : 'Himanshu' }}, though Isaiah is totally fine if that’s easier to say. Great software feels instant and
-            lightweight, qualities that are rare today. I design simple yet highly scalable, real-time software with zero bloat for the future.
+            lightweight, qualities that are rare today. I care most about the parts you feel: how fast it opens, how it answers a press, how little gets in
+            the way.
           </p>
         </div>
 
@@ -125,7 +126,7 @@ onBeforeUnmount(() => {
             <p>{{ p.summary }}</p>
             <p v-if="p.stats?.length || p.links.length" class="facts">
               <span v-for="s in p.stats" :key="s.label">
-                <strong>{{ s.value }}</strong> {{ s.label }}<a v-if="s.note" class="mark" :href="`#${s.note}`" aria-label="How this is estimated">*</a>
+                <strong>{{ s.value }}</strong> {{ s.label }}<a v-if="s.note" class="mark" :href="`#${s.note}`" aria-label="How this is counted">*</a>
               </span>
               <a v-for="l in p.links" :key="l.href" class="text-link" :href="l.href" rel="noopener">{{ l.label }}</a>
             </p>
