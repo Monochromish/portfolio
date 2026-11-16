@@ -469,7 +469,7 @@ defineExpose({
   padding: var(--s4);
   border-radius: var(--r4);
   background: var(--surface);
-  box-shadow: 0 0 0 1px var(--line), 0 24px 64px -16px rgb(0 0 0 / 0.5);
+  box-shadow: var(--edge), 0 24px 64px -16px rgb(0 0 0 / 0.5);
   color: var(--ink-2);
   /* open() sets the origin to the button that opened it */
   transform-origin: var(--from-x, 50%) var(--from-y, 100%);
@@ -636,6 +636,7 @@ defineExpose({
   padding: 0 18px;
   border-radius: var(--r2);
   background: var(--ink);
+  box-shadow: var(--edge-ink);
   color: var(--paper);
   font-size: 15px;
   font-weight: 600;

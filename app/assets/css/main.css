@@ -47,6 +47,17 @@
   --fill: oklch(19.8% 0.008 295 / 0.05);
   --fill-hover: oklch(19.8% 0.008 295 / 0.09);
   --select: oklch(19.8% 0.008 295 / 0.14);
+  /* surfaces are lit from above: a light line along the top edge and a darker one along the bottom, over a hairline. One under the cursor lifts, a pressed one sinks */
+  --edge-hi: oklch(100% 0 0 / 0.75);
+  --edge-lo: oklch(19.8% 0.008 295 / 0.07);
+  --edge-glow: oklch(100% 0 0 / 0.45);
+  --edge-glow-lift: oklch(100% 0 0 / 0.8);
+  --edge-press: oklch(19.8% 0.008 295 / 0.16);
+  --edge: inset 0 1px 0 0 var(--edge-hi), inset 0 -1px 0 0 var(--edge-lo), inset 0 10px 12px -10px var(--edge-glow), inset 0 0 0 1px var(--line);
+  --edge-lift: inset 0 1px 0 0 var(--edge-hi), inset 0 -1px 0 0 var(--edge-lo), inset 0 16px 14px -12px var(--edge-glow-lift), inset 0 0 0 1px var(--line-strong);
+  --edge-down: inset 0 1px 0 0 transparent, inset 0 -1px 0 0 transparent, inset 0 2px 5px 0 var(--edge-press), inset 0 0 0 1px var(--line);
+  /* the same light on a filled button: the top line shows on a dark fill, the bottom one on a light fill */
+  --edge-ink: inset 0 1px 0 0 oklch(100% 0 0 / 0.22), inset 0 -1px 0 0 oklch(0% 0 0 / 0.18);
   /* an inner radius is the outer one less the padding between them */
   --s1: 4px;
   --s2: 8px;
@@ -82,7 +93,21 @@
   --fill: oklch(96.9% 0.003 295 / 0.07);
   --fill-hover: oklch(96.9% 0.003 295 / 0.13);
   --select: oklch(96.9% 0.003 295 / 0.2);
+  --edge-hi: oklch(100% 0 0 / 0.14);
+  --edge-lo: oklch(0% 0 0 / 0.35);
+  --edge-glow: oklch(100% 0 0 / 0.05);
+  --edge-glow-lift: oklch(100% 0 0 / 0.1);
+  --edge-press: oklch(0% 0 0 / 0.5);
   color-scheme: dark;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --edge: inset 0 0 0 1px var(--line-strong);
+    --edge-lift: var(--edge);
+    --edge-down: var(--edge);
+    --edge-ink: 0 0 0 0 transparent;
+  }
 }
 
 html {
@@ -172,20 +197,21 @@ button {
   padding: 0 18px;
   border-radius: var(--r2);
   background: var(--ink);
+  box-shadow: var(--edge-ink);
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
   color: var(--paper);
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
+  transition: background-color 150ms ease, box-shadow 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
 .button:active {
   transform: scale(0.97);
 }
 .button.soft {
   background: var(--fill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: var(--edge);
   color: var(--ink);
 }
 .button[aria-disabled='true'] {
@@ -209,10 +235,14 @@ button {
   }
   .button.soft:hover {
     background: var(--fill-hover);
+    box-shadow: var(--edge-lift);
   }
   .text-link:hover {
     text-decoration-color: var(--ink);
   }
+}
+.button.soft:active {
+  box-shadow: var(--edge-down);
 }
 @media (prefers-reduced-motion: reduce) {
   .button {

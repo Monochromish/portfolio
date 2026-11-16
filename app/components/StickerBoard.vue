@@ -296,9 +296,9 @@ onBeforeUnmount(() => {
 .board {
   position: relative;
   aspect-ratio: 3 / 2;
-  border: 1px solid var(--line);
   border-radius: 18px;
   background-color: var(--surface);
+  box-shadow: var(--edge);
   background-image: radial-gradient(circle at 1px 1px, var(--line-strong) 1px, transparent 1.4px);
   background-size: 18px 18px;
   background-position: 9px 9px;
@@ -442,17 +442,18 @@ onBeforeUnmount(() => {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
+  transition: background-color 150ms ease, box-shadow 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
 .cancel {
   padding: 0 16px;
   background: var(--fill);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: var(--edge);
   color: var(--ink);
 }
 .stick {
   padding: 0 18px 0 20px;
   background: var(--ink);
+  box-shadow: var(--edge-ink);
   color: var(--paper);
 }
 .stick span {
@@ -462,6 +463,9 @@ onBeforeUnmount(() => {
 .stick:active {
   transform: scale(0.97);
 }
+.cancel:active {
+  box-shadow: var(--edge-down);
+}
 .stick[aria-disabled='true'] {
   cursor: progress;
   background: color-mix(in srgb, var(--ink) 70%, var(--paper));
@@ -470,6 +474,10 @@ onBeforeUnmount(() => {
   .cancel:hover {
     border-radius: var(--r3);
     background: var(--fill-hover);
+    box-shadow: var(--edge-lift);
+  }
+  .cancel:hover:active {
+    box-shadow: var(--edge-down);
   }
   .stick:not([aria-disabled='true']):hover {
     border-radius: var(--r3);

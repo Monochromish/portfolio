@@ -143,9 +143,9 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
 .prose :deep(pre) {
   padding: 16px 18px;
   overflow-x: auto;
-  border: 1px solid var(--line);
   border-radius: var(--r2);
   background: var(--surface);
+  box-shadow: var(--edge);
   color: var(--ink);
   font-size: 14.5px;
   line-height: 1.6;

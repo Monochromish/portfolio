@@ -236,6 +236,8 @@ button.portrait:active {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
 }
 
 .who {
