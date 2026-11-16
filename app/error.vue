@@ -25,8 +25,10 @@ function sameOrigin(url: string | undefined) {
 }
 const fromSite = useState('error-from-site', () => import.meta.client ? !!history.state?.back || sameOrigin(document.referrer) : sameOrigin(referer))
 
+const plain = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+
 function previous(e: MouseEvent) {
-  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  if (!plain(e)) return
   e.preventDefault()
   let fromSite = false
   try {
@@ -39,127 +41,11 @@ function previous(e: MouseEvent) {
   else clearError({ redirect: '/' })
 }
 
-const FONT = '600 1000px Figtree, "Figtree Fallback", system-ui, sans-serif'
-const REVEAL = 800
-
-const stage = ref<HTMLElement>()
-const canvas = ref<HTMLCanvasElement>()
-
-let ctx: CanvasRenderingContext2D | null = null
-let frame: ImageData | null = null
-let fb: Uint32Array | null = null
-let inside: Uint8Array | null = null
-let tone: Uint32Array | null = null
-let order: Float32Array | null = null
-let cols = 0
-let rows = 0
-let shown = 0
-let raf = 0
-let sizer: ResizeObserver | undefined
-let themes: MutationObserver | undefined
-let fontReady = false
-
-function paintTones() {
-  if (inside) tone = rampFill(inside, cols, rows, readColor(stage.value!, '--ink'), readColor(stage.value!, '--accent'))
+function home(e: MouseEvent) {
+  if (!plain(e)) return
+  e.preventDefault()
+  clearError({ redirect: '/' })
 }
-
-function fit(width: number, height: number) {
-  if (!fontReady || !canvas.value) return
-  const dpr = devicePixelRatio || 1
-  const cell = innerWidth < 640 ? 3 : 4
-  const k = Math.max(2, Math.round(cell * dpr))
-  const text = String(status.value)
-  const probe = document.createElement('canvas').getContext('2d')!
-  probe.font = FONT
-  const m = probe.measureText(text)
-  const inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight
-  const inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent
-  const css = Math.min(width, height * inkW / inkH)
-  const c = Math.max(1, Math.round(css * dpr / k))
-  const el = canvas.value
-  if (c !== cols) {
-    cols = c
-    const s = cols / inkW
-    rows = Math.max(1, Math.round(inkH * s))
-    const off = document.createElement('canvas')
-    off.width = cols
-    off.height = rows
-    const octx = off.getContext('2d', { willReadFrequently: true })!
-    octx.font = FONT.replace('1000px', `${1000 * s}px`)
-    octx.fillText(text, m.actualBoundingBoxLeft * s, m.actualBoundingBoxAscent * s)
-    const px = octx.getImageData(0, 0, cols, rows).data
-    inside = new Uint8Array(cols * rows)
-    order = new Float32Array(cols * rows)
-    for (let i = 0; i < inside.length; i++) inside[i] = px[i * 4 + 3]! > 127 ? 1 : 0
-    // one column over, so the reveal does not follow the tone ramp
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) order[y * cols + x] = bayer(x + 1, y)
-    el.width = cols
-    el.height = rows
-    ctx = el.getContext('2d')!
-    frame = ctx.createImageData(cols, rows)
-    fb = new Uint32Array(frame.data.buffer)
-    paintTones()
-    draw()
-  }
-  el.style.width = `${cols * k / dpr}px`
-  el.style.height = `${rows * k / dpr}px`
-}
-
-function draw() {
-  if (!ctx || !frame || !fb || !tone || !order) return
-  for (let i = 0; i < fb.length; i++) fb[i] = order[i]! < shown ? tone[i]! : 0
-  ctx.putImageData(frame, 0, 0)
-}
-
-function reveal(reduced: boolean) {
-  if (reduced) {
-    shown = 1
-    draw()
-    return
-  }
-  const start = performance.now()
-  const step = (now: number) => {
-    const t = Math.min(1, (now - start) / REVEAL)
-    // quintic ease-out, close to --ease-out
-    shown = 1 - (1 - t) ** 5
-    draw()
-    raf = t < 1 ? requestAnimationFrame(step) : 0
-  }
-  raf = requestAnimationFrame(step)
-}
-
-onMounted(async () => {
-  try {
-    await document.fonts.load(FONT, String(status.value))
-  }
-  catch {
-  }
-  if (!stage.value) return
-  fontReady = true
-  const box = stage.value.getBoundingClientRect()
-  fit(box.width, box.height)
-  reveal(matchMedia('(prefers-reduced-motion: reduce)').matches)
-  sizer = new ResizeObserver(([entry]) => fit(entry!.contentRect.width, entry!.contentRect.height))
-  try {
-    sizer.observe(stage.value, { box: 'device-pixel-content-box' })
-  }
-  catch {
-    sizer.observe(stage.value)
-  }
-  themes = new MutationObserver(() => {
-    paintTones()
-    draw()
-  })
-  themes.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-})
-
-onBeforeUnmount(() => {
-  cancelAnimationFrame(raf)
-  sizer?.disconnect()
-  themes?.disconnect()
-})
-
-const fallback = computed(() => `<p class="plain">${status.value}</p>`)
 </script>
 
 <template>
@@ -174,16 +60,19 @@ const fallback = computed(() => `<p class="plain">${status.value}</p>`)
     </template>
   </SiteHeader>
   <main id="content" class="lost">
-    <h1 class="sr-only">{{ title }}</h1>
-    <p class="sr-only">
-      Error {{ status }}. {{ missing ? 'Nothing lives at this address. It may be mistyped, or the page has moved.' : 'This page did not load. Try again in a moment.' }}
+    <p class="code" aria-hidden="true">{{ status }}</p>
+    <h1 class="page-title title">{{ title }}</h1>
+    <p class="lead">
+      <span class="sr-only">Error {{ status }}. </span>{{ missing ? 'Nothing lives at this address. It may be mistyped, or the page has moved.' : 'This page did not load. Try again in a moment.' }}
     </p>
-    <div ref="stage" class="stage" aria-hidden="true">
-      <canvas ref="canvas" width="0" height="0" />
-      <noscript v-html="fallback" />
+    <ul class="links">
+      <li><a class="button" href="/" @click="home">Home</a></li>
+      <li v-if="fromSite"><a class="text-link" href="/" @click="previous">Previous page</a></li>
+    </ul>
+    <div class="end">
+      <SiteFooter />
     </div>
   </main>
-  <SiteFooter />
 </template>
 
 <style scoped>
@@ -220,36 +109,46 @@ const fallback = computed(() => `<p class="plain">${status.value}</p>`)
     min-height: 44px;
   }
 }
+
+/* 76 px clears the fixed header */
 .lost {
   display: flex;
   flex-direction: column;
+  max-width: 40rem;
   min-height: 100svh;
+  margin: 0 auto;
+  padding: calc(76px + var(--s8)) max(var(--s5), env(safe-area-inset-right)) var(--s7) max(var(--s5), env(safe-area-inset-left));
+  line-height: 1.65;
 }
-.stage {
-  position: relative;
-  flex: 1;
-  width: min(1040px, calc(100% - 2 * max(24px, env(safe-area-inset-left), env(safe-area-inset-right))));
-  margin: 104px auto 56px;
-}
-canvas {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  image-rendering: pixelated;
-}
-.stage :deep(.plain) {
-  margin: 0;
-  font-size: clamp(120px, 28vw, 360px);
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  text-align: center;
+/* pulled left so the first stroke meets the text edge */
+.code {
+  margin: 0 0 0 -0.04em;
+  font-family: var(--font-display);
+  font-size: clamp(72px, 12vw, 112px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
   color: var(--ink);
 }
-@media (max-width: 640px) {
-  .stage {
-    width: calc(100% - 40px);
-    margin: 96px auto 48px;
-  }
+.title {
+  margin-top: var(--s5);
+}
+.lead {
+  margin: var(--s3) 0 0;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s5);
+  margin: var(--s5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* the footer keeps to the bottom of a short page */
+.end {
+  margin-top: auto;
+  padding-top: var(--s8);
 }
 </style>

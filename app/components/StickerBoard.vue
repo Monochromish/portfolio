@@ -361,7 +361,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeTip))
   width: 18px;
   height: 18px;
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--ink);
   cursor: pointer;
 }
 .buttons {
@@ -374,20 +374,22 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeTip))
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: var(--r2);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, transform 160ms var(--ease-out);
+  transition: background-color 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
 .cancel {
   padding: 0 16px;
-  border: 1px solid var(--line-strong);
+  background: var(--fill);
+  box-shadow: inset 0 0 0 1px var(--line);
   color: var(--ink);
 }
 .stick {
   padding: 0 18px 0 20px;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--ink);
+  color: var(--paper);
 }
 .stick span {
   font-size: 18px;
@@ -398,14 +400,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeTip))
 }
 .stick[aria-disabled='true'] {
   cursor: progress;
-  background: color-mix(in srgb, var(--accent) 80%, var(--paper));
+  background: color-mix(in srgb, var(--ink) 70%, var(--paper));
 }
 @media (hover: hover) and (pointer: fine) {
   .cancel:hover {
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
+    border-radius: var(--r3);
+    background: var(--fill-hover);
   }
   .stick:not([aria-disabled='true']):hover {
-    background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+    border-radius: var(--r3);
+    background: var(--ink-2);
   }
 }
 .problem {

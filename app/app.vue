@@ -43,7 +43,7 @@ const embed = JSON.stringify({
   component: {
     // container > text > row of link buttons
     type: 17,
-    accent_color: 0x57B9BF,
+    accent_color: 0x9B7BFF,
     spoiler: false,
     components: [
       { type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` },

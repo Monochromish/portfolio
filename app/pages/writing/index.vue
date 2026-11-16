@@ -20,11 +20,7 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
   <main id="content" class="shell">
     <WritingSection page />
   </main>
-  <SiteFooter />
+  <div class="page-end">
+    <SiteFooter />
+  </div>
 </template>
-
-<style scoped>
-.shell {
-  padding-top: 48px;
-}
-</style>

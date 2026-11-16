@@ -6,23 +6,15 @@ const { morphing, disk, rays } = useSunMoon(dark)
 const { name } = useIdentity()
 const route = useRoute()
 const error = useError()
-const solid = computed(() => route.path !== '/' || !!error.value)
-const introPassed = useIntroPassed()
-const showName = computed(() => solid.value || introPassed.value)
+// the home page has its own name and links: only the theme switch, and it scrolls away
+const bare = computed(() => route.path === '/' && !error.value)
 const links: { label: string, href: string, section?: string }[] = [
   { label: 'Work', href: '/#work', section: 'work' },
   ...(posts.length ? [{ label: 'Writing', href: '/#writing', section: 'writing' }] : []),
-  { label: 'About', href: '/#about', section: 'about' },
   { label: 'Resume', href: '/Himanshu_Adwani_Resume.pdf' },
 ]
 
-const surface = useToolbarSurface()
-const reading = useActiveSection(links.flatMap(l => l.section ? [l.section] : []))
-const current = computed(() => {
-  if (error.value) return null
-  if (/^\/writing(\/|$)/.test(route.path)) return links.some(l => l.section === 'writing') ? 'writing' : null
-  return surface.value === 'paper' ? reading.value : null
-})
+const current = computed(() => !error.value && /^\/writing(\/|$)/.test(route.path) && links.some(l => l.section === 'writing') ? 'writing' : null)
 
 const mark = ref<HTMLElement>()
 let shownAt: string | null = null
@@ -100,12 +92,12 @@ onBeforeUnmount(() => sizer?.disconnect())
 </script>
 
 <template>
-  <header class="site-header" :class="{ solid }">
+  <header class="site-header" :class="{ solid: !bare, bare }">
     <slot name="lead">
-      <NuxtLink to="/" class="name" :class="{ away: !showName }" :data-lagoon-calm="showName ? 'light' : undefined">{{ name }}</NuxtLink>
+      <NuxtLink v-show="!bare" to="/" class="name">{{ name }}</NuxtLink>
     </slot>
-    <nav aria-label="Main" data-lagoon-calm="light">
-      <div class="tabs">
+    <nav aria-label="Main">
+      <div v-show="!bare" class="tabs">
         <ul>
           <li v-for="l in links" :key="l.label">
             <a :href="l.href" :aria-current="l.section && l.section === current ? 'true' : undefined" @click="onNavClick">{{ l.label }}</a>
@@ -164,6 +156,10 @@ onBeforeUnmount(() => sizer?.disconnect())
 .solid::before {
   opacity: 1;
 }
+.bare {
+  position: absolute;
+  justify-content: flex-end;
+}
 @media (prefers-reduced-transparency: reduce) {
   .site-header::before {
     background: var(--paper);
@@ -180,19 +176,6 @@ onBeforeUnmount(() => sizer?.disconnect())
   text-decoration: none;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), visibility 0s;
-}
-.away {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(6px);
-  transition-duration: 150ms, 150ms, 0s;
-  transition-delay: 0s, 0s, 150ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  .away {
-    transform: none;
-  }
 }
 nav {
   display: flex;
@@ -311,8 +294,8 @@ nav a[aria-current]:focus-visible {
 .mark {
   position: absolute;
   inset: 0;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--ink);
+  color: var(--paper);
   pointer-events: none;
   opacity: 0;
   transition: opacity 150ms var(--ease-out), clip-path 220ms var(--ease-in-out), transform 160ms var(--ease-out);

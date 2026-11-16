@@ -153,18 +153,17 @@ function ago(at: number) {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 28px;
-  margin-bottom: 8px;
+  margin-bottom: var(--s2);
 }
 .label {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--t-small);
+  font-weight: 500;
   line-height: 1.4;
-  color: var(--ink);
+  color: var(--ink-3);
 }
 .eq {
   display: inline-flex;
@@ -191,7 +190,7 @@ function ago(at: number) {
 .eq span:nth-child(3) { --rest: 0.75; --swing: 0.3; }
 .eq span:nth-child(4) { --rest: 0.4; --swing: 0.9; }
 .playing .eq {
-  color: var(--accent);
+  color: var(--ink);
 }
 .eq.run span {
   animation: eq 0.9s ease-in-out 4 alternate;
@@ -222,9 +221,9 @@ function ago(at: number) {
   align-items: center;
   gap: 14px;
   min-height: var(--now-row-height, 0);
-  margin: 0 -10px;
-  padding: 8px 10px;
-  border-radius: 14px;
+  margin: 0 calc(var(--s3) * -1);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r2);
   color: inherit;
   text-decoration: none;
   transition: background-color 150ms;
@@ -238,7 +237,7 @@ a.row:active {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 a.row:focus-visible {
-  border-radius: 14px;
+  border-radius: var(--r2);
   outline-offset: 0;
 }
 

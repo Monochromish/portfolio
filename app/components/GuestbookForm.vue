@@ -62,6 +62,7 @@ const full = ref(false)
 const input = ref<'pointer' | 'keyboard'>('pointer')
 
 const challengeSlot = ref<HTMLElement>()
+const pad = ref<HTMLDialogElement>()
 const submit = ref<HTMLButtonElement>()
 const noticeLine = ref<HTMLElement>()
 const errorLine = ref<HTMLElement>()
@@ -255,7 +256,27 @@ async function ready() {
     return
   }
   warm()
+  pad.value?.close()
   emit('place', { template: t.id, strokes })
+}
+
+// the pad opens as a dialog that grows out of whatever opened it
+function open(from?: DOMRect) {
+  const el = pad.value
+  if (!el || el.open) return
+  el.showModal()
+  const box = el.getBoundingClientRect()
+  el.style.setProperty('--from-x', from ? `${from.left + from.width / 2 - box.left}px` : '50%')
+  el.style.setProperty('--from-y', from ? `${from.top + from.height / 2 - box.top}px` : '100%')
+  warm()
+}
+
+// a click on the dimmed page behind closes it, as Escape does
+function onBackdrop(e: MouseEvent) {
+  const el = pad.value
+  if (!el || e.target !== el) return
+  const b = el.getBoundingClientRect()
+  if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) el.close()
 }
 
 async function post(place: Placement, shareCountry: boolean): Promise<string | null> {
@@ -287,7 +308,15 @@ async function post(place: Placement, shareCountry: boolean): Promise<string | n
   }
 }
 
-defineExpose({ post, back: () => submit.value?.focus() })
+// back: placing was cancelled, so the pad returns with the drawing still on it
+defineExpose({
+  post,
+  open,
+  back: () => {
+    open()
+    submit.value?.focus()
+  },
+})
 </script>
 
 <template>
@@ -302,11 +331,12 @@ defineExpose({ post, back: () => submit.value?.focus() })
         {{ notice }}
       </p>
 
+      <dialog v-if="template" ref="pad" class="pad-dialog" aria-labelledby="pad-title" @click="onBackdrop">
+      <h2 id="pad-title" class="pad-title">Leave a sticker</h2>
+      <p class="pad-note">Doodle on the sticker, then stick it anywhere on the board.</p>
       <form
-        v-if="template"
         class="editor"
         novalidate
-        :inert="placing"
         :aria-label="`Draw on the ${template.label}`"
         :aria-busy="sending"
         @submit.prevent="ready"
@@ -374,6 +404,9 @@ defineExpose({ post, back: () => submit.value?.focus() })
         </div>
 
         <div class="actions">
+          <button type="button" class="quiet" @click="pad?.close()">
+            Cancel
+          </button>
           <button ref="submit" type="submit" class="submit">
             Put it on the board
           </button>
@@ -383,6 +416,7 @@ defineExpose({ post, back: () => submit.value?.focus() })
           </p>
         </div>
       </form>
+      </dialog>
     </template>
     <div v-if="siteKey" ref="challengeSlot" class="challenge" />
   </div>
@@ -418,7 +452,6 @@ defineExpose({ post, back: () => submit.value?.focus() })
   flex: none;
   margin-top: 3px;
   font-size: 17px;
-  color: var(--accent);
 }
 .notice:focus-visible {
   outline-offset: 4px;
@@ -427,14 +460,68 @@ defineExpose({ post, back: () => submit.value?.focus() })
 .notice {
   scroll-margin-top: 112px;
 }
+/* 24 px corners and 16 px of padding: the pad inside takes what is left of the corner */
+/* the reset takes a dialog's own centring margin away */
+.pad-dialog {
+  margin: auto;
+  width: min(30rem, calc(100vw - 2 * var(--s4)));
+  max-height: calc(100dvh - 2 * var(--s4));
+  padding: var(--s4);
+  border-radius: var(--r4);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 24px 64px -16px rgb(0 0 0 / 0.5);
+  color: var(--ink-2);
+  /* open() sets the origin to the button that opened it */
+  transform-origin: var(--from-x, 50%) var(--from-y, 100%);
+  opacity: 0;
+  scale: 0.96;
+  transition: opacity 180ms ease, scale 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
+}
+.pad-dialog[open] {
+  opacity: 1;
+  scale: 1;
+}
+@starting-style {
+  .pad-dialog[open] {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+.pad-dialog::backdrop {
+  background: rgb(0 0 0 / 0);
+  transition: background-color 220ms ease, overlay 220ms allow-discrete, display 220ms allow-discrete;
+}
+.pad-dialog[open]::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+@starting-style {
+  .pad-dialog[open]::backdrop {
+    background: rgb(0 0 0 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pad-dialog,
+  .pad-dialog::backdrop {
+    transition: none;
+  }
+}
+.pad-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.pad-note {
+  margin: 2px 0 0;
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
 .editor {
   display: flex;
   flex-direction: column;
-  margin-top: 28px;
-  transition: opacity 150ms ease;
-}
-.editor[inert] {
-  opacity: 0.45;
+  margin-top: var(--s3);
 }
 .hint {
   margin: 10px 0 0;
@@ -546,20 +633,22 @@ defineExpose({ post, back: () => submit.value?.focus() })
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 20px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--on-accent);
+  padding: 0 18px;
+  border-radius: var(--r2);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, transform 160ms var(--ease-out);
+  transition: background-color 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
 .submit:active {
   transform: scale(0.97);
 }
 @media (hover: hover) and (pointer: fine) {
   .submit:hover {
-    background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+    border-radius: var(--r3);
+    background: var(--ink-2);
   }
 }
 .error {

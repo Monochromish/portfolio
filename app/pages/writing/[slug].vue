@@ -26,9 +26,9 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
 
 <template>
   <main id="content" class="shell">
-    <article class="article" aria-labelledby="post-title">
+    <article class="section" aria-labelledby="post-title">
       <header class="head">
-        <h1 id="post-title">{{ title }}</h1>
+        <h1 id="post-title" class="page-title">{{ title }}</h1>
         <p class="meta">
           <time :datetime="date">{{ postDate(date, 'long') }}</time>
         </p>
@@ -38,48 +38,29 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
         <component :is="Body" />
       </div>
       <footer class="foot">
-        <NuxtLink to="/writing" class="more">
-          All writing
-          <span class="i-site-send" aria-hidden="true" />
-        </NuxtLink>
+        <NuxtLink to="/writing" class="text-link">All writing</NuxtLink>
       </footer>
     </article>
   </main>
-  <SiteFooter />
+  <div class="page-end">
+    <SiteFooter />
+  </div>
 </template>
 
 <style scoped>
-.shell {
-  padding-top: 48px;
-}
-.article {
-  /* the site column, about 72 characters a line at 17px */
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 104px 24px 0;
-}
 .head {
-  padding-bottom: 32px;
-  margin-bottom: 40px;
-  border-bottom: 1px solid var(--line);
-}
-h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 650;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  margin-bottom: var(--s7);
 }
 .head .meta {
-  margin: 12px 0 0;
+  margin: var(--s3) 0 0;
 }
 .summary {
-  margin: 18px 0 0;
-  font-size: 18.5px;
-  line-height: 1.55;
+  max-width: 31rem;
+  margin: var(--s4) 0 0;
   color: var(--ink-3);
 }
 
+/* 17 px in the 592 px column: about 72 characters a line */
 .prose {
   font-size: 17px;
   line-height: 1.7;
@@ -163,7 +144,7 @@ h1 {
   padding: 16px 18px;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r2);
   background: var(--surface);
   color: var(--ink);
   font-size: 14.5px;
@@ -174,7 +155,7 @@ h1 {
   font-size: inherit;
 }
 .prose :deep(:is(img, video)) {
-  border-radius: 8px;
+  border-radius: var(--r2);
 }
 .prose :deep(figure) {
   margin: 2em 0;
@@ -187,36 +168,6 @@ h1 {
 }
 
 .foot {
-  margin-top: 56px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-}
-.more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  font-size: 16px;
-  font-weight: 550;
-  color: var(--ink);
-  text-decoration: none;
-}
-.more span {
-  font-size: 18px;
-  color: var(--ink-3);
-  transition: transform 150ms;
-}
-@media (hover: hover) and (pointer: fine) {
-  .more:hover span {
-    transform: translateX(2px);
-  }
-}
-@media (max-width: 640px) {
-  .article {
-    padding: 72px 20px 0;
-  }
-  h1 {
-    font-size: 26px;
-  }
+  margin-top: var(--s7);
 }
 </style>

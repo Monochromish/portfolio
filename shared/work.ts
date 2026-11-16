@@ -26,6 +26,8 @@ export interface Project {
   role: string
   org: string
   period: string
+  // the one line under the project's name in the home page's list
+  brief: string
   summary: string
   points: string[]
   stats?: { value: string, label: string, note?: string }[]
@@ -47,6 +49,7 @@ export const projects: Project[] = [
     role: 'Senior Lead Developer',
     org: 'Cider Collective',
     period: 'Nov 2022 to now',
+    brief: 'Senior Lead Developer, Cider Collective',
     summary: 'Cider is a paid Apple Music client for Windows, macOS and Linux. I\u00a0work across its Vue interface and its Electron and .NET apps.',
     points: [
       'Led the rebuild of the app’s settings system, replacing eight hand-built pages with typed setting lists that later categories also use, and rewrote its search to handle typos, accents and languages written without spaces.',
@@ -99,6 +102,7 @@ export const projects: Project[] = [
     role: 'Firmware Project Manager',
     org: 'Penn State Formula SAE Electric, electronics team',
     period: 'Sep 2026 to now',
+    brief: 'Firmware Project Manager, Penn State Formula SAE Electric',
     summary: 'Telemetry and firmware tooling for the team’s electric race car, including the telemetry page the team reads while the car is running.',
     points: [
       'SD-card CAN logging in Vector BLF format for the car’s ESP32-\u2060C6 telemetry unit, with an allocation-free classifier that flags sessions containing faults or drive data, covered by software-in-the-loop tests that run on the host.',
@@ -138,6 +142,7 @@ export const projects: Project[] = [
     role: 'Encrypted peer-to-peer file transfer',
     org: 'C# and .NET',
     period: 'Sep 2026',
+    brief: 'Encrypted peer-to-peer file transfer, in C# and .NET',
     summary: 'Files and clipboard between your own devices, directly, with nothing in the middle. I started it out of frustration that there’s no Continuity between Windows and Apple devices.',
     points: [
       'A transfer protocol with its own mDNS discovery, pinned mutual TLS, code-based pairing using a commitment scheme, and resumable uploads that are hashed while they stream.',
@@ -183,6 +188,7 @@ export const projects: Project[] = [
     role: 'AirPlay 2 sender library',
     org: 'Rust',
     period: 'Oct 2026',
+    brief: 'AirPlay 2 sender library, in Rust',
     summary: 'An AirPlay 2 sender written in Rust as interoperability research, verified with realtime ALAC playback on Apple TV 4K hardware.',
     points: [
       'HomeKit SRP and Ed25519 pairing, a ChaCha20-\u2060Poly1305 encrypted RTSP channel and a PTP grandmaster clock.',

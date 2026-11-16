@@ -9,31 +9,27 @@ const shown = computed(() => props.page ? all : all.slice(0, HOME_LIMIT))
 </script>
 
 <template>
-  <section v-if="all.length" id="writing" class="section" :class="{ page }" aria-labelledby="writing-title">
-    <component :is="page ? 'h1' : 'h2'" id="writing-title" class="section-title">Writing</component>
-    <p class="section-intro">Notes on interfaces, motion and the things I build.</p>
-    <div class="section-body">
-      <ul class="rows" role="list">
-        <li v-for="post in shown" :key="post.slug">
-          <NuxtLink :to="`/writing/${post.slug}`" class="row">
-            <span class="title">{{ post.title }}</span>
-            <time class="meta" :datetime="post.date">{{ postDate(post.date) }}</time>
-          </NuxtLink>
-        </li>
-      </ul>
-      <NuxtLink v-if="shown.length < all.length" to="/writing" class="more">
-        All writing
-        <span class="i-site-send" aria-hidden="true" />
-      </NuxtLink>
-    </div>
+  <section v-if="all.length" id="writing" class="section" aria-labelledby="writing-title">
+    <component :is="page ? 'h1' : 'h2'" id="writing-title" :class="page ? 'page-title' : 'label'">Writing</component>
+    <p v-if="page" class="intro">Notes on interfaces, motion and the things I build.</p>
+    <ul class="rows" role="list">
+      <li v-for="post in shown" :key="post.slug">
+        <NuxtLink :to="`/writing/${post.slug}`" class="row">
+          <span class="title">{{ post.title }}</span>
+          <time class="when" :datetime="post.date">{{ postDate(post.date) }}</time>
+        </NuxtLink>
+      </li>
+    </ul>
+    <p v-if="shown.length < all.length" class="all">
+      <NuxtLink to="/writing" class="text-link">All writing</NuxtLink>
+    </p>
   </section>
 </template>
 
 <style scoped>
-.page .section-title {
-  font-size: 28px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+.intro {
+  max-width: 31rem;
+  margin: var(--s3) 0 var(--s6);
 }
 .rows {
   margin: 0;
@@ -41,61 +37,41 @@ const shown = computed(() => props.page ? all : all.slice(0, HOME_LIMIT))
   list-style: none;
 }
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 24px;
-  margin: 0 -12px;
-  padding: 12px;
-  border-radius: 10px;
-  color: var(--ink);
+  column-gap: var(--s4);
+  margin: 0 calc(var(--s3) * -1);
+  padding: 10px var(--s3);
+  border-radius: var(--r2);
   text-decoration: none;
-  transition: background-color 150ms, opacity 150ms;
+  transition: background-color 150ms ease;
 }
 .title {
-  min-width: 0;
-  font-weight: 550;
-  line-height: 1.5;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
   text-wrap: pretty;
 }
-.row .meta {
-  flex: none;
+.when {
+  font-size: var(--t-small);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--ink-3);
 }
 .row:focus-visible {
   outline-offset: 0;
-  border-radius: 10px;
+  border-radius: var(--r2);
+}
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--fill);
+  }
 }
 .row:active {
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: var(--fill-hover);
 }
-@media (hover: hover) and (pointer: fine) {
-  .rows:hover .row {
-    opacity: 0.5;
-  }
-  .rows .row:hover {
-    opacity: 1;
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
-  }
-}
-.more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  margin-top: 12px;
-  color: var(--ink);
-  font-weight: 550;
-  text-decoration: none;
-}
-.more span {
-  font-size: 18px;
-  color: var(--ink-3);
-  transition: transform 150ms;
-}
-@media (hover: hover) and (pointer: fine) {
-  .more:hover span {
-    transform: translateX(2px);
-  }
+.all {
+  margin: var(--s3) 0 0;
 }
 </style>

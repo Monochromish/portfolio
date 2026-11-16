@@ -15,62 +15,31 @@ const short = commit.slice(0, 7)
 
 <template>
   <footer class="site-footer">
-    <p class="line">
-      <span class="will">Confidence that you will is overconfidence;</span>
-      <span class="can">confidence that you can is what keeps you trying.</span>
-    </p>
-    <div class="row">
-      <ul class="links">
-        <li v-for="l in links" :key="l.label">
-          <a :href="l.href" :rel="l.href.startsWith('http') ? 'noopener' : undefined">{{ l.label }}</a>
-        </li>
-      </ul>
-      <a class="source" :href="source" rel="noopener">
-        <span class="i-site-github" aria-hidden="true" />
-        <span><span class="sr-only">Source code, </span>Monochromish/portfolio<span v-if="short" class="hash">#{{ short }}</span></span>
-      </a>
-    </div>
-    <Wordmark class="mark" />
+    <ul class="links">
+      <li v-for="l in links" :key="l.label">
+        <a :href="l.href" :rel="l.href.startsWith('http') ? 'noopener' : undefined">{{ l.label }}</a>
+      </li>
+    </ul>
+    <a class="source" :href="source" rel="noopener">
+      <span class="i-site-github" aria-hidden="true" />
+      <span><span class="sr-only">Source code, </span>Monochromish/portfolio<span v-if="short" class="hash">#{{ short }}</span></span>
+    </a>
   </footer>
 </template>
 
 <style scoped>
+/* each chip's padding hangs outside the column, so the text keeps to its edges */
 .site-footer {
-  width: min(1040px, calc(100% - 2 * max(24px, env(safe-area-inset-left), env(safe-area-inset-right))));
-  margin: auto auto 0;
-  padding-top: 160px;
-}
-.line {
-  margin: 0;
-  /* keeps the longer clause (21.4em) on one line */
-  font-size: clamp(26px, 4.4vw - 2px, 44px);
-  font-weight: 500;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-}
-.line span {
-  display: block;
-  text-wrap: balance;
-}
-.will {
-  color: var(--ink-3);
-}
-.can {
-  color: var(--ink);
-}
-.row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px 24px;
-  margin-top: 40px;
+  gap: var(--s1) var(--s2);
 }
 .links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 2px;
-  margin: 0 0 0 -10px;
+  margin: 0 0 0 -7px;
   padding: 0;
   list-style: none;
 }
@@ -79,19 +48,21 @@ const short = commit.slice(0, 7)
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  padding: 0 10px;
-  border-radius: 8px;
+  border-radius: var(--r1);
   text-decoration: none;
   transition: background-color 150ms ease, transform 160ms var(--ease-out);
 }
 .links a {
-  color: var(--ink);
+  padding: 0 7px;
+  font-size: 15px;
   font-weight: 550;
+  color: var(--ink);
 }
 .source {
-  gap: 7px;
-  margin-right: -10px;
-  font-size: 14px;
+  gap: 6px;
+  margin-right: -8px;
+  padding: 0 8px;
+  font-size: 13px;
   color: var(--ink-2);
 }
 .source > [class^='i-site'] {
@@ -105,12 +76,12 @@ const short = commit.slice(0, 7)
 @media (hover: hover) and (pointer: fine) {
   .links a:hover,
   .source:hover {
-    background: color-mix(in srgb, var(--ink) 7%, transparent);
+    background: var(--fill);
   }
 }
 .links a:active,
 .source:active {
-  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  background: var(--fill-hover);
   transform: scale(0.97);
 }
 @media (pointer: coarse) {
@@ -119,29 +90,23 @@ const short = commit.slice(0, 7)
     min-height: 44px;
   }
 }
-.mark {
-  margin-top: 72px;
-}
-@media (max-width: 640px) {
-  .site-footer {
-    width: calc(100% - 40px);
-    padding-top: 120px;
+/* wrapped below the links, it starts on their edge */
+@media (max-width: 700px) {
+  .source {
+    margin: 0 0 0 -8px;
   }
-  /* all five fit one row at 375 px */
+}
+/* all five links fit one row at 375 px */
+@media (max-width: 640px) {
   .links {
-    gap: 0;
     margin-left: -6px;
   }
   .links a {
     padding: 0 6px;
-    font-size: 15px;
   }
   .source {
-    margin: 0 0 0 -6px;
+    margin-left: -6px;
     padding: 0 6px;
-  }
-  .mark {
-    margin-top: 48px;
   }
 }
 @media (max-width: 372px) {

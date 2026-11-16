@@ -41,7 +41,7 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   <div v-if="!unavailable" ref="root" class="col">
     <div class="head">
       <h3 class="label">
-        <span class="i-site-film" aria-hidden="true" />Recently watched
+        Recently watched
       </h3>
     </div>
 
@@ -113,24 +113,18 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 28px;
-  margin-bottom: 8px;
+  margin-bottom: var(--s2);
 }
 .label {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--t-small);
+  font-weight: 500;
   line-height: 1.4;
-  color: var(--ink);
-}
-.label > span {
-  font-size: 18px;
   color: var(--ink-3);
 }
-
 .rows {
   display: grid;
   margin: 0;
@@ -143,9 +137,9 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   align-items: center;
   gap: 18px;
   min-height: var(--now-row-height, 0);
-  margin: 0 -10px;
-  padding: 8px 10px;
-  border-radius: 14px;
+  margin: 0 calc(var(--s3) * -1);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r2);
   color: inherit;
   text-decoration: none;
   transition: background-color 150ms;
@@ -159,7 +153,7 @@ a.row:active {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 a.row:focus-visible {
-  border-radius: 14px;
+  border-radius: var(--r2);
   outline-offset: 0;
 }
 
@@ -252,7 +246,7 @@ a.row:focus-visible {
 }
 .liked {
   font-size: 14px;
-  color: var(--accent);
+  color: var(--ink-2);
 }
 .rewatch {
   font-size: 15px;

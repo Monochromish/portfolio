@@ -28,7 +28,8 @@ const placed = ref<BoardSticker | null>(null)
 const draft = ref<StickerDraft | null>(null)
 const posting = ref(false)
 const problem = ref('')
-const form = ref<{ post: (place: Placement, shareCountry: boolean) => Promise<string | null>, back: () => void }>()
+const form = ref<{ post: (place: Placement, shareCountry: boolean) => Promise<string | null>, open: (from?: DOMRect) => void, back: () => void }>()
+const opener = ref<HTMLButtonElement>()
 const board = ref<ComponentPublicInstance>()
 let boardWas: number | null = null
 const boardTop = () => (board.value?.$el as HTMLElement | undefined)?.getBoundingClientRect().top ?? 0
@@ -107,9 +108,15 @@ async function loadOlder() {
 
 <template>
   <section id="stickers" class="section" :class="{ page }" aria-labelledby="stickers-title">
-    <component :is="page ? 'h1' : 'h2'" id="stickers-title" class="section-title">Sticker book</component>
-    <p class="section-intro">Doodle on the sticker, then stick it anywhere on the board.</p>
-    <div class="section-body">
+    <div class="head">
+      <component :is="page ? 'h1' : 'h2'" id="stickers-title" :class="page ? 'page-title' : 'label title'">
+        {{ page ? 'Sticker book' : 'Stickers' }}<template v-if="!page && total">, {{ total }} left by visitors</template>
+      </component>
+      <button v-if="!own.left && !draft" ref="opener" type="button" class="button soft" @click="form?.open(opener?.getBoundingClientRect())">
+        Leave a sticker
+      </button>
+    </div>
+    <div class="body">
       <StickerDefs />
       <GuestbookForm ref="form" :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
       <StickerBoard
@@ -123,12 +130,12 @@ async function loadOlder() {
         @cancel="onCancel"
       />
       <p v-if="!page && total > approved.length" class="more">
-        <NuxtLink to="/stickers" class="more-link">
+        <NuxtLink to="/stickers" class="button soft">
           See all {{ total }} stickers
         </NuxtLink>
       </p>
       <p v-if="page && next" class="more">
-        <button type="button" class="more-link" :aria-disabled="loadingOlder ? 'true' : undefined" @click="loadOlder">
+        <button type="button" class="button soft" :aria-disabled="loadingOlder ? 'true' : undefined" @click="loadOlder">
           {{ loadingOlder ? 'Loading' : 'Show older stickers' }}
         </button>
         <span v-if="olderError" class="meta" role="alert">That did not load. Try again.</span>
@@ -138,42 +145,32 @@ async function loadOlder() {
 </template>
 
 <style scoped>
-.page .section-title {
-  font-size: 28px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+/* the row is as tall as its button; pulled up so the heading, centred in it, starts where every other section's does */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  min-height: 44px;
+  margin-top: calc(var(--s3) * -1);
+}
+.page .head {
+  margin-top: 0;
+}
+/* the row centres it */
+.title {
+  margin: 0;
+}
+.body :deep(.board-wrap) {
+  margin-top: var(--s3);
 }
 .more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px 14px;
-  margin: 16px 0 0;
-}
-.more-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  font-weight: 550;
-  color: var(--ink);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 150ms ease, transform 160ms var(--ease-out);
-}
-.more-link:active {
-  transform: scale(0.97);
-}
-.more-link[aria-disabled='true'] {
-  cursor: progress;
-  opacity: 0.6;
-}
-@media (hover: hover) and (pointer: fine) {
-  .more-link:hover {
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
-  }
+  gap: var(--s2) var(--s4);
+  margin: var(--s4) 0 0;
 }
 </style>
