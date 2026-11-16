@@ -7,6 +7,7 @@
     "build": "node scripts/icon.mjs && nuxt build",
     "preview": "nuxt preview",
     "icon": "node scripts/icon.mjs",
+    "og": "node scripts/og.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

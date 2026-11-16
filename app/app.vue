@@ -5,14 +5,23 @@ const origin = alias ? useRequestURL().origin : site
 const description = `${alias ? 'Monochromish (Himanshu Adwani)' : 'Himanshu Adwani (Isaiah)'}: senior lead developer at Cider, the Apple Music client, and computer science student at Penn State.`
 const avatar = 'https://avatars.githubusercontent.com/u/79590499?v=4'
 
+// LinkedIn and iMessage show a card's title and picture and nothing else, so the title carries the role
+const cardTitle = `${name}, senior lead developer at Cider`
+const cardText = 'I build Cider, the Apple Music client for Windows, macOS and Linux, and study computer science at Penn State.'
+
 useSeoMeta({
   title: name,
   description,
-  ogTitle: name,
-  ogDescription: description,
+  ogTitle: cardTitle,
+  ogDescription: cardText,
+  ogImage: `${origin}/og.png`,
+  ogImageType: 'image/png',
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageAlt: `A portrait of ${name} above the name and the line Senior lead developer at Cider`,
   ogType: 'website',
   ogUrl: origin,
-  twitterCard: 'summary',
+  twitterCard: 'summary_large_image',
 })
 
 useHead({
@@ -41,12 +50,14 @@ useHead({
 // a Discord component embed (docs.discord.com: Link previews, Component embeds)
 const embed = JSON.stringify({
   component: {
-    // container > text > row of link buttons
+    // container > section (text and the portrait) > row of link buttons
     type: 17,
-    accent_color: 0x9B7BFF,
-    spoiler: false,
     components: [
-      { type: 10, content: `# ${name}\nSenior lead developer at Cider, the Apple Music client. Computer science at Penn State.` },
+      {
+        type: 9,
+        components: [{ type: 10, content: `## ${name}\nSenior lead developer at Cider, the Apple Music client for Windows, macOS and Linux.\nComputer science at Penn State, class of 2028.` }],
+        accessory: { type: 11, media: { url: `${site}/portrait.jpg` }, description: `Portrait of ${name}` },
+      },
       {
         type: 1,
         components: [
