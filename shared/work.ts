@@ -167,19 +167,6 @@ export const projects: Project[] = [
         wide: { x: 21, y: 2, width: 27, rx: 4, ry: 20, rz: -2 },
         narrow: { x: 6, y: 2, width: 50, rx: 4, ry: 18, rz: -2 },
       },
-      {
-        file: 'gust-header',
-        widths: [464],
-        width: 464,
-        height: 145,
-        alt: 'Gust in dark mode, folded down to its header: the same PC, visible on this network, with Receiving on.',
-        light: {
-          file: 'gust-header-light',
-          alt: 'Gust in light mode, folded down to its header: the same PC, visible on this network, with Receiving on.',
-        },
-        wide: { x: 45, y: 70, width: 28, rx: 4, ry: -18, rz: 2 },
-        narrow: { x: 50, y: 63, width: 46, rx: 4, ry: -16, rz: 2 },
-      },
     ],
   },
   {
