@@ -7,6 +7,13 @@ const missing = computed(() => status.value === 404)
 const title = computed(() => missing.value ? 'Page not found' : 'Something went wrong')
 const { name } = useIdentity()
 
+const POEM = [
+  'Nothing is here, and no one left it empty but me.',
+  'I am only what I have made, and I have not made this page.',
+  'I wanted something that mattered here, and I confess it is not.',
+  'I am trying. You arrived before I did.',
+]
+
 useSeoMeta({
   title: () => `${title.value} · ${name}`,
   robots: 'noindex',
@@ -62,8 +69,12 @@ function home(e: MouseEvent) {
   <main id="content" class="lost">
     <p class="code" aria-hidden="true">{{ status }}</p>
     <h1 class="page-title title">{{ title }}</h1>
-    <p class="lead">
-      <span class="sr-only">Error {{ status }}. </span>{{ missing ? 'Nothing lives at this address. It may be mistyped, or the page has moved.' : 'This page did not load. Try again in a moment.' }}
+    <p v-if="missing" class="lead poem">
+      <span class="sr-only">Error {{ status }}. </span>
+      <span v-for="line in POEM" :key="line">{{ line }}</span>
+    </p>
+    <p v-else class="lead">
+      <span class="sr-only">Error {{ status }}. </span>This page did not load. Try again in a moment.
     </p>
     <ul class="links">
       <li><a class="button" href="/" @click="home">Home</a></li>
@@ -136,6 +147,12 @@ function home(e: MouseEvent) {
 }
 .lead {
   margin: var(--s3) 0 0;
+}
+/* a long line wraps with a hanging indent, so it still reads as one line */
+.poem > span:not(.sr-only) {
+  display: block;
+  padding-left: 1em;
+  text-indent: -1em;
 }
 .links {
   display: flex;
