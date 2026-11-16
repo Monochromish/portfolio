@@ -28,21 +28,3 @@ const paths = computed(() => inkPaths(t.value, props.strokes))
     <use class="sticker-dim" :href="`#stk-${t.id}-o`" :stroke-width="t.border * 2" />
   </svg>
 </template>
-
-<style>
-.sticker-art {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.sticker-dim {
-  display: none;
-  fill: #000;
-  stroke: #000;
-  opacity: 0.12;
-}
-:root.dark .sticker-dim {
-  display: inline;
-}
-</style>

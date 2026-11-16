@@ -41,6 +41,8 @@ export default defineNuxtConfig({
     '/icon-192.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/apple-touch-icon.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/portrait.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
+    '/portrait-160.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
+    '/portrait-240.jpg': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/og.png': { headers: { 'cache-control': 'public, max-age=86400' } },
     '/Himanshu_Adwani_Resume.pdf': { headers: { 'cache-control': 'public, max-age=3600, stale-while-revalidate=86400' } },
     '/': { headers: { 'cache-control': 'private, no-cache', 'vary': 'cookie' } },
@@ -75,12 +77,18 @@ export default defineNuxtConfig({
     },
   },
   css: ['~/assets/css/main.css'],
+  // 17 KB of styles in six files would each hold up the first paint; in the page they cost nothing extra.
+  // UnoCSS turns inlining off unless told not to
+  features: { inlineStyles: true },
+  unocss: { disableNuxtInlineStyle: false },
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
       viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       title: 'Himanshu Adwani',
       meta: [
+        // tells the browser to paint its blank page dark for a visitor whose system is dark, before any styles arrive
+        { name: 'color-scheme', content: 'light dark' },
         { name: 'description', content: 'Himanshu Adwani (Isaiah): senior lead developer at Cider, the Apple Music client, and computer science student at Penn State.' },
       ],
       link: [

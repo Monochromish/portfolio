@@ -77,7 +77,7 @@ onBeforeUnmount(() => {
           class="portrait rise"
           v-bind="reduced ? {} : { 'type': 'button', 'aria-pressed': paused, 'title': paused ? 'Play the contours' : 'Pause the contours', 'onClick': toggle }"
         >
-          <img src="/portrait.jpg" alt="Portrait of Himanshu Adwani" width="460" height="460" decoding="async" fetchpriority="high">
+          <img src="/portrait-160.jpg" srcset="/portrait-160.jpg 160w, /portrait-240.jpg 240w" sizes="80px" alt="Portrait of Himanshu Adwani" width="160" height="160" decoding="async" fetchpriority="high">
           <span v-if="!reduced" class="sr-only">Pause the contours around it</span>
         </component>
         <div class="who rise" data-field-calm>

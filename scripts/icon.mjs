@@ -11,8 +11,9 @@ async function picture(size) {
 }
 
 try {
-  // 128 px is a 32 CSS px tab icon at 4x; 460 px, the largest GitHub serves, is the home page's 200 CSS px portrait at 2x
-  const [round, tab, touch, card, portrait] = await Promise.all([128, 32, 180, 192, 460].map(picture))
+  // 128 px is a 32 CSS px tab icon at 4x. The home page's portrait is 80 CSS px: 160 and 240 px are that at 2x and 3x.
+  // 460 px, the largest GitHub serves, is for link previews
+  const [round, tab, touch, card, portrait, small, medium] = await Promise.all([128, 32, 180, 192, 460, 160, 240].map(picture))
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><clipPath id="c"><circle cx="64" cy="64" r="64"/></clipPath><image width="128" height="128" clip-path="url(#c)" href="data:image/jpeg;base64,${round.toString('base64')}"/></svg>\n`
   await Promise.all([
     writeFile(new URL('icon.svg', PUBLIC), svg),
@@ -20,6 +21,8 @@ try {
     writeFile(new URL('apple-touch-icon.jpg', PUBLIC), touch),
     writeFile(new URL('icon-192.jpg', PUBLIC), card),
     writeFile(new URL('portrait.jpg', PUBLIC), portrait),
+    writeFile(new URL('portrait-160.jpg', PUBLIC), small),
+    writeFile(new URL('portrait-240.jpg', PUBLIC), medium),
   ])
   console.log('icon: saved from GitHub')
 }

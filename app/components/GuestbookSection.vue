@@ -4,21 +4,28 @@ import type { ComponentPublicInstance } from 'vue'
 import type { OwnSticker, Placement, Sticker, StickerPage } from '#shared/types'
 import type { BoardSticker, StickerDraft } from './StickerBoard.vue'
 
-defineProps<{ page?: boolean }>()
+const props = defineProps<{ page?: boolean }>()
 
 // the board shows the newest 24 stickers, the most the API sends at once
 const LIMIT = 24
 
-const { data, error } = await useFetch<StickerPage>('/api/guestbook', {
+// on the home page the board is far below the first screen, so it loads after the page and does not hold it up
+const wait = { server: !!props.page, lazy: !props.page }
+
+const { data, error, status } = await useFetch<StickerPage>('/api/guestbook', {
   key: 'guestbook-board',
   query: { limit: LIMIT },
   default: () => ({ stickers: [], total: 0, next: null }),
+  ...wait,
 })
 
-const { data: own, refresh: refreshOwn } = await useFetch<OwnSticker>('/api/guestbook/mine', {
+const { data: own, refresh: refreshOwn, status: ownStatus } = await useFetch<OwnSticker>('/api/guestbook/mine', {
   key: 'guestbook-mine',
   default: () => ({ left: false, sticker: null }),
+  ...wait,
 })
+
+const settled = (s: string) => s === 'success' || s === 'error'
 
 const older = ref<Sticker[]>([])
 const olderNext = ref<number | null | undefined>()
@@ -112,7 +119,7 @@ async function loadOlder() {
       <component :is="page ? 'h1' : 'h2'" id="stickers-title" :class="page ? 'page-title' : 'label title'">
         {{ page ? 'Sticker book' : 'Stickers' }}<template v-if="!page && total">, {{ total }} left by visitors</template>
       </component>
-      <button v-if="!own.left && !draft" ref="opener" type="button" class="button soft" @click="form?.open(opener?.getBoundingClientRect())">
+      <button v-if="settled(ownStatus) && !own.left && !draft" ref="opener" type="button" class="button soft" @click="form?.open(opener?.getBoundingClientRect())">
         Leave a sticker
       </button>
     </div>
@@ -125,7 +132,7 @@ async function loadOlder() {
         :draft="draft"
         :posting="posting"
         :problem="problem"
-        :note="error && !echoes.length ? 'The stickers are not loading right now.' : 'No stickers yet.'"
+        :note="!settled(status) ? '' : error && !echoes.length ? 'The stickers are not loading right now.' : 'No stickers yet.'"
         @place="onStick"
         @cancel="onCancel"
       />

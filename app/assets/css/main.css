@@ -306,3 +306,20 @@ button {
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
+
+/* used by every sticker wherever it is drawn; kept here so no stylesheet of its own has to load before the page paints */
+.sticker-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sticker-dim {
+  display: none;
+  fill: #000;
+  stroke: #000;
+  opacity: 0.12;
+}
+:root.dark .sticker-dim {
+  display: inline;
+}
