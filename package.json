@@ -8,6 +8,7 @@
     "preview": "nuxt preview",
     "icon": "node scripts/icon.mjs",
     "og": "node scripts/og.mjs",
+    "banner": "node scripts/banner.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
