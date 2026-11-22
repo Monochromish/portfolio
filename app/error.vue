@@ -67,19 +67,24 @@ function home(e: MouseEvent) {
     </template>
   </SiteHeader>
   <main id="content" class="lost">
-    <p class="code" aria-hidden="true">{{ status }}</p>
-    <h1 class="page-title title">{{ title }}</h1>
-    <p v-if="missing" class="lead poem">
-      <span class="sr-only">Error {{ status }}. </span>
-      <span v-for="line in POEM" :key="line">{{ line }}</span>
-    </p>
-    <p v-else class="lead">
-      <span class="sr-only">Error {{ status }}. </span>This page did not load. Try again in a moment.
-    </p>
-    <ul class="links">
-      <li><a class="button" href="/" @click="home">Home</a></li>
-      <li v-if="fromSite"><a class="text-link" href="/" @click="previous">Previous page</a></li>
-    </ul>
+    <StickerDefs />
+    <StickerWall class="scene">
+      <div class="words" data-wall-clear>
+        <p class="code" data-wall-origin aria-hidden="true">{{ status }}</p>
+        <h1 class="page-title title">{{ title }}</h1>
+        <p v-if="missing" class="lead poem">
+          <span class="sr-only">Error {{ status }}. </span>
+          <span v-for="line in POEM" :key="line">{{ line }}</span>
+        </p>
+        <p v-else class="lead">
+          <span class="sr-only">Error {{ status }}. </span>This page did not load. Try again in a moment.
+        </p>
+        <ul class="links">
+          <li><a class="button" href="/" @click="home">Home</a></li>
+          <li v-if="fromSite"><a class="text-link" href="/" @click="previous">Previous page</a></li>
+        </ul>
+      </div>
+    </StickerWall>
     <div class="end">
       <SiteFooter />
     </div>
@@ -121,15 +126,24 @@ function home(e: MouseEvent) {
   }
 }
 
-/* 76 px clears the fixed header */
 .lost {
+  --gutter-l: max(var(--s5), env(safe-area-inset-left));
+  --gutter-r: max(var(--s5), env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
-  max-width: 40rem;
   min-height: 100svh;
-  margin: 0 auto;
-  padding: calc(76px + var(--s8)) max(var(--s5), env(safe-area-inset-right)) var(--s7) max(var(--s5), env(safe-area-inset-left));
+  overflow-x: clip;
   line-height: 1.65;
+}
+/* the wall fills the screen above the footer, with the words in its middle; 76 px clears the fixed header */
+.scene {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding: calc(76px + var(--s7)) var(--gutter-r) var(--s8) var(--gutter-l);
+}
+.words {
+  width: min(100%, 40rem);
 }
 /* pulled left so the first stroke meets the text edge */
 .code {
@@ -163,9 +177,18 @@ function home(e: MouseEvent) {
   padding: 0;
   list-style: none;
 }
-/* the footer keeps to the bottom of a short page */
 .end {
-  margin-top: auto;
-  padding-top: var(--s8);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(67.5rem + var(--gutter-l) + var(--gutter-r));
+  margin: 0 auto;
+  padding: 0 var(--gutter-r) var(--s7) var(--gutter-l);
+}
+@media (max-width: 640px) {
+  /* stickers have the band between the header and the words */
+  .scene {
+    place-items: start;
+    padding-top: calc(76px + 132px);
+  }
 }
 </style>
