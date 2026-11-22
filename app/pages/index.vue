@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="host" class="home">
-    <canvas ref="field" class="field" aria-hidden="true" />
+    <canvas ref="field" class="field rise" aria-hidden="true" />
 
     <main id="content" class="column">
       <header>

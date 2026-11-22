@@ -51,6 +51,12 @@ const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
 }
+// where a block comes to rest: the entrance slides it, and the canvas slides along, so the contours are placed for the end of it
+function resting(el: Element) {
+  const b = el.getBoundingClientRect()
+  const slid = new DOMMatrixReadOnly(getComputedStyle(el).transform)
+  return { left: b.left - slid.e, top: b.top - slid.f, width: b.width, height: b.height }
+}
 const bump = (q: number) => (1 - q * q) * (1 - q * q)
 // two slow waves around a contour, so it is not a circle
 const wander = (a: number, t: number, k: number) => 0.6 * Math.sin(3 * a + t * 0.4 + k) + 0.4 * Math.sin(5 * a - t * 0.3 + k * 1.7)
@@ -121,7 +127,7 @@ export class ContourField {
   private layout() {
     const { host, field, box } = this.parts
     const frame = host.getBoundingClientRect()
-    const at = box.getBoundingClientRect()
+    const at = resting(box)
     if (!frame.width || !at.width) return
     this.dirty = false
     const r = at.width / 2
@@ -144,7 +150,7 @@ export class ContourField {
     // every [data-field-calm] block is kept clear, with a soft edge
     let calm: HTMLCanvasElement | null = null
     for (const el of host.querySelectorAll<HTMLElement>('[data-field-calm]')) {
-      const b = el.getBoundingClientRect()
+      const b = resting(el)
       const left = b.left - frame.left - x
       const top = b.top - frame.top - y
       if (!b.width || !b.height || left > w + FEATHER || top > h + FEATHER || left + b.width < -FEATHER || top + b.height < -FEATHER) continue

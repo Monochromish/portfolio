@@ -13,10 +13,6 @@ export function useContourField(parts: Parts) {
   let seen: IntersectionObserver | undefined
 
   const relayout = () => engine?.relayout()
-  // the entrance slides everything 8 px, so measure again once it ends
-  const onSettled = (e: AnimationEvent) => {
-    if ((e.target as Element).classList.contains('rise')) relayout()
-  }
   // at most one pulse every 900 ms
   const onEnter = () => engine?.pulse(0.6, 900)
 
@@ -62,7 +58,6 @@ export function useContourField(parts: Parts) {
     seen.observe(field)
     // the text moves when the fonts arrive
     document.fonts.ready.then(relayout)
-    host.addEventListener('animationend', onSettled)
     box.addEventListener('pointerenter', onEnter)
   })
 
@@ -70,7 +65,6 @@ export function useContourField(parts: Parts) {
     sizer?.disconnect()
     themes?.disconnect()
     seen?.disconnect()
-    parts.host.value?.removeEventListener('animationend', onSettled)
     parts.box.value?.removeEventListener('pointerenter', onEnter)
     engine?.destroy()
     engine = null
