@@ -160,7 +160,8 @@ async function loadOlder() {
       </button>
     </div>
     <div class="body">
-      <StickerDefs />
+      <!-- the home page has the artwork already, and a second copy under the same names loses the stickers their colours when it goes -->
+      <StickerDefs v-if="page" />
       <GuestbookForm ref="form" :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
       <StickerBoard
         ref="board"
