@@ -7,11 +7,11 @@ const root = ref<HTMLElement | null>(null)
 const { data, state } = usePolling<Film[]>('/api/films', root)
 const now = useNow()
 
-const SKELETON = [['58%', '30%'], ['70%', '22%'], ['46%', '34%'], ['62%', '26%']] as const
+const SKELETON = ['78%', '92%', '64%', '84%'] as const
 const longDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' })
 
-// Letterboxd sizes posters by path; 150x225 covers this 44x66 tile at 3x
-const smallPoster = (url: string) => url.replace(/-0-\d+-0-\d+-crop/, '-0-150-0-225-crop')
+// Letterboxd sizes posters by path; 460x690 covers a tile up to 230 px wide at 2x
+const smallPoster = (url: string) => url.replace(/-0-\d+-0-\d+-crop/, '-0-460-0-690-crop')
 const brokenPoster = shallowReactive(new Set<string>())
 const loadedPoster = shallowReactive(new Set<string>())
 
@@ -45,22 +45,17 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
       </h3>
     </div>
 
-    <ul v-if="state === 'loading'" class="rows skeleton" aria-hidden="true">
-      <li v-for="(widths, i) in SKELETON" :key="i" class="row">
+    <ul v-if="state === 'loading'" class="films skeleton" aria-hidden="true">
+      <li v-for="(width, i) in SKELETON" :key="i" class="film">
         <span class="poster" />
-        <span class="text">
-          <span class="line">
-            <span class="title"><span class="bar" :style="{ width: widths[0] }" /></span>
-            <span class="when"><span class="bar" style="width: 40px" /></span>
-          </span>
-          <span class="sub"><span class="bar" :style="{ width: widths[1] }" /></span>
-        </span>
+        <span class="title"><span class="bar" :style="{ width }" /></span>
+        <span class="sub"><span class="bar" style="width: 52%" /></span>
       </li>
     </ul>
 
-    <ul v-else class="rows" role="list">
+    <ul v-else class="films" role="list">
       <li v-for="f in rows" :key="f.key">
-        <a class="row" :href="f.url" rel="noopener">
+        <a class="film" :href="f.url" rel="noopener">
           <span class="poster">
             <span class="i-site-film" aria-hidden="true" />
             <img
@@ -68,8 +63,8 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
               :src="f.poster"
               :class="{ loaded: loadedPoster.has(f.poster) }"
               alt=""
-              width="44"
-              height="66"
+              width="230"
+              height="345"
               loading="lazy"
               decoding="async"
               referrerpolicy="no-referrer"
@@ -77,27 +72,23 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
               @error="brokenPoster.add(f.poster!)"
             >
           </span>
-          <span class="text">
-            <span class="line">
-              <span class="title" dir="auto">{{ f.title }}</span>
-              <span v-if="f.day" class="sr-only">, watched </span><time v-if="f.day" class="when meta" :datetime="f.watchedOn!" :title="longDate.format(f.day)">{{ watchedLabel(f.day) }}</time>
-            </span>
-            <span class="sub">
-              <span v-if="f.year" class="meta"><span class="sr-only">, from </span>{{ f.year }}</span>
-              <span v-if="f.rating !== null" class="stars">
-                <span v-for="(s, i) in stars(f.rating)" :key="i" class="star" :class="s" aria-hidden="true">
-                  <span class="i-site-star" />
-                  <span v-if="s === 'half'" class="i-site-star-half" />
-                </span>
-                <span class="sr-only">, rated {{ f.rating }} out of 5</span>
+          <span class="title" dir="auto">{{ f.title }}</span>
+          <span class="sub">
+            <span v-if="f.year" class="meta"><span class="sr-only">, from </span>{{ f.year }}</span>
+            <span v-if="f.day" class="meta"><span class="sr-only">, watched </span><time :datetime="f.watchedOn!" :title="longDate.format(f.day)">{{ watchedLabel(f.day) }}</time></span>
+            <span v-if="f.rating !== null" class="stars">
+              <span v-for="(s, i) in stars(f.rating)" :key="i" class="star" :class="s" aria-hidden="true">
+                <span class="i-site-star" />
+                <span v-if="s === 'half'" class="i-site-star-half" />
               </span>
-              <template v-if="f.liked">
-                <span class="i-site-heart-fill liked" aria-hidden="true" /><span class="sr-only">, liked</span>
-              </template>
-              <template v-if="f.rewatch">
-                <span class="i-site-rewatch rewatch" aria-hidden="true" /><span class="sr-only">, rewatched</span>
-              </template>
+              <span class="sr-only">, rated {{ f.rating }} out of 5</span>
             </span>
+            <template v-if="f.liked">
+              <span class="i-site-heart-fill liked" aria-hidden="true" /><span class="sr-only">, liked</span>
+            </template>
+            <template v-if="f.rewatch">
+              <span class="i-site-rewatch rewatch" aria-hidden="true" /><span class="sr-only">, rewatched</span>
+            </template>
           </span>
         </a>
       </li>
@@ -125,50 +116,34 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   line-height: 1.4;
   color: var(--ink-3);
 }
-.rows {
+.films {
   display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-/* 44 + 18 aligns the text with Listening (48 + 14) */
-.row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: var(--now-row-height, 0);
-  margin: 0 calc(var(--s3) * -1);
-  padding: var(--s2) var(--s3);
-  border-radius: var(--r2);
+.film {
+  display: block;
   color: inherit;
   text-decoration: none;
-  transition: background-color 150ms;
+  transition: opacity 180ms ease;
 }
-@media (hover: hover) and (pointer: fine) {
-  a.row:hover {
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
-  }
-}
-a.row:active {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-a.row:focus-visible {
+a.film:focus-visible {
   border-radius: var(--r2);
-  outline-offset: 0;
 }
-
 .poster {
   position: relative;
   display: grid;
-  flex: none;
   place-items: center;
-  width: 44px;
-  height: 66px;
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--surface);
-  font-size: 20px;
+  font-size: 26px;
   color: var(--ink-3);
+  transition: transform 220ms var(--ease-out);
 }
 .poster::after {
   content: '';
@@ -190,41 +165,46 @@ a.row:focus-visible {
 .poster img.loaded {
   opacity: 1;
 }
-
-.text {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-.line {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  min-width: 0;
-}
 .title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-align: left;
+  display: block;
+  margin-top: var(--s3);
   font-size: 15px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--ink);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.when {
-  flex: none;
 }
 .sub {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 0 var(--s2);
   min-height: 20px;
+  margin-top: 2px;
   font-size: 14px;
   line-height: 1.45;
   color: var(--ink-3);
+}
+@media (hover: hover) and (pointer: fine) {
+  .films:hover a.film:not(:hover) {
+    opacity: 0.45;
+  }
+  a.film:hover .poster {
+    transform: translateY(-4px);
+  }
+}
+@media (max-width: 640px) {
+  .films {
+    gap: var(--s3);
+  }
+  .title {
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film,
+  .poster {
+    transition: none;
+  }
 }
 .stars {
   display: inline-flex;
@@ -265,9 +245,5 @@ a.row:focus-visible {
 }
 .skeleton .sub {
   display: block;
-}
-.skeleton .when {
-  font-size: 14px;
-  line-height: 1.45;
 }
 </style>

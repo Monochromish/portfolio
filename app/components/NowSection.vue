@@ -17,19 +17,18 @@ const gone = reactive({ listening: false, watching: false })
 <style scoped>
 .columns {
   display: grid;
-  gap: 40px;
+  gap: 72px;
 }
-@media (min-width: 720px) {
+@media (min-width: 900px) {
   .columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 36px;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: start;
+    column-gap: 64px;
   }
-  /* a poster row is 66 + 2 x 8 px */
-  .columns:has(> :nth-child(2)) {
-    --now-row-height: 82px;
-  }
+  /* one without the other keeps its own width; four posters across the whole page would be huge */
   .columns > :only-child {
     grid-column: 1 / -1;
+    max-width: 40rem;
   }
 }
 </style>

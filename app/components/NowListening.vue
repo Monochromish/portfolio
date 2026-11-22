@@ -7,7 +7,7 @@ const root = ref<HTMLElement | null>(null)
 const { data, state } = usePolling<Track[]>('/api/listening', root, () => 30_000)
 const now = useNow()
 
-const SKELETON = [['64%', '38%'], ['48%', '30%'], ['72%', '44%'], ['56%', '34%']] as const
+const SKELETON = [['48%', '30%'], ['72%', '44%'], ['56%', '34%']] as const
 const fullDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 
 // Last.fm resizes and re-encodes art by path; 174s is 174 px
@@ -22,7 +22,9 @@ const tracks = computed(() => {
 
 const rows = computed(() => tracks.value.map((t) => {
   const art = t.art ? [smallArt(t.art), t.art].find(src => !brokenArt.has(src)) ?? null : null
-  return { ...t, key: t.url, art }
+  // the newest track is shown large, so it takes the full-size art first
+  const cover = t.art ? [t.art, smallArt(t.art)].find(src => !brokenArt.has(src)) ?? null : null
+  return { ...t, key: t.url, art, cover }
 }))
 
 const latest = computed(() => rows.value[0])
@@ -100,48 +102,80 @@ function ago(at: number) {
       </h3>
     </div>
 
-    <ul v-if="state === 'loading'" class="rows skeleton" aria-hidden="true">
-      <li v-for="(widths, i) in SKELETON" :key="i" class="row">
-        <span class="art" />
-        <span class="text">
-          <span class="line">
-            <span class="title"><span class="bar" :style="{ width: widths[0] }" /></span>
-            <span class="when"><span class="bar" style="width: 44px" /></span>
-          </span>
-          <span class="sub"><span class="bar" :style="{ width: widths[1] }" /></span>
+    <div v-if="state === 'loading'" class="skeleton" aria-hidden="true">
+      <div class="latest">
+        <span class="cover"><span class="art" /></span>
+        <span class="words">
+          <span class="bar" style="width: 62%; height: 14px" />
+          <span class="bar" style="width: 38%" />
         </span>
-      </li>
-    </ul>
+      </div>
+      <ul class="rows">
+        <li v-for="(widths, i) in SKELETON" :key="i" class="row">
+          <span class="art" />
+          <span class="text">
+            <span class="title"><span class="bar" :style="{ width: widths[0] }" /></span>
+            <span class="sub"><span class="bar" :style="{ width: widths[1] }" /></span>
+          </span>
+          <span class="when"><span class="bar" style="width: 44px" /></span>
+        </li>
+      </ul>
+    </div>
 
-    <TransitionGroup v-else tag="ul" name="track" class="rows" role="list" @before-leave="pinLeaving">
-      <li v-for="r in rows" :key="r.key">
-        <a class="row" :href="r.url" rel="noopener">
+    <template v-else>
+      <a v-if="latest" class="latest" :href="latest.url" rel="noopener">
+        <span class="cover">
+          <img v-if="latest.cover && loadedArt.has(latest.cover)" class="glow" :src="latest.cover" alt="" aria-hidden="true">
           <span class="art">
             <span class="i-site-music" aria-hidden="true" />
             <img
-              v-if="r.art"
-              :src="r.art"
-              :class="{ loaded: loadedArt.has(r.art) }"
+              v-if="latest.cover"
+              :src="latest.cover"
+              :class="{ loaded: loadedArt.has(latest.cover) }"
               alt=""
-              width="48"
-              height="48"
-              loading="lazy"
+              width="148"
+              height="148"
               decoding="async"
-              @load="loadedArt.add(r.art!)"
-              @error="brokenArt.add(r.art!)"
+              @load="loadedArt.add(latest.cover!)"
+              @error="brokenArt.add(latest.cover!)"
             >
           </span>
-          <span class="text">
-            <span class="line">
-              <span class="title" dir="auto">{{ r.title }}</span>
-              <time v-if="r.playedAt" class="when meta" :datetime="iso(r.playedAt)" :title="fullDate.format(r.playedAt)">{{ ago(r.playedAt) }}</time>
-              <span v-else-if="r.nowPlaying" class="when meta">Now</span>
+        </span>
+        <span class="words">
+          <span class="title" dir="auto">{{ latest.title }}</span>
+          <span class="sub"><span class="sr-only">by </span><span dir="auto">{{ latest.artist }}</span></span>
+          <time v-if="latest.playedAt" class="meta" :datetime="iso(latest.playedAt)" :title="fullDate.format(latest.playedAt)">{{ ago(latest.playedAt) }}</time>
+          <span v-else-if="latest.nowPlaying" class="meta">Now</span>
+        </span>
+      </a>
+
+      <TransitionGroup tag="ul" name="track" class="rows" role="list" @before-leave="pinLeaving">
+        <li v-for="r in rows.slice(1)" :key="r.key">
+          <a class="row" :href="r.url" rel="noopener">
+            <span class="art">
+              <span class="i-site-music" aria-hidden="true" />
+              <img
+                v-if="r.art"
+                :src="r.art"
+                :class="{ loaded: loadedArt.has(r.art) }"
+                alt=""
+                width="36"
+                height="36"
+                loading="lazy"
+                decoding="async"
+                @load="loadedArt.add(r.art!)"
+                @error="brokenArt.add(r.art!)"
+              >
             </span>
-            <span class="sub"><span class="sr-only">by </span><span dir="auto">{{ r.artist }}</span></span>
-          </span>
-        </a>
-      </li>
-    </TransitionGroup>
+            <span class="text">
+              <span class="title" dir="auto">{{ r.title }}</span>
+              <span class="sub"><span class="sr-only">by </span><span dir="auto">{{ r.artist }}</span></span>
+            </span>
+            <time v-if="r.playedAt" class="when meta" :datetime="iso(r.playedAt)" :title="fullDate.format(r.playedAt)">{{ ago(r.playedAt) }}</time>
+          </a>
+        </li>
+      </TransitionGroup>
+    </template>
   </div>
 </template>
 
@@ -209,50 +243,98 @@ function ago(at: number) {
   to { transform: scaleY(var(--swing)); }
 }
 
+/* the newest track, large, lit from behind by its own cover */
+.latest {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: end;
+  gap: 22px;
+  color: inherit;
+  text-decoration: none;
+}
+a.latest:focus-visible {
+  border-radius: var(--r2);
+}
+.cover {
+  position: relative;
+  isolation: isolate;
+}
+.glow {
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  border-radius: 30px;
+  filter: blur(44px) saturate(1.5);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.words .title {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  white-space: normal;
+}
+.words .sub {
+  font-size: 16px;
+}
+.words .meta {
+  margin-top: var(--s2);
+}
+
 .rows {
   position: relative;
   display: grid;
-  margin: 0;
+  margin: 26px 0 0;
   padding: 0;
+  border-top: 1px solid var(--line);
   list-style: none;
 }
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  min-height: var(--now-row-height, 0);
-  margin: 0 calc(var(--s3) * -1);
-  padding: var(--s2) var(--s3);
-  border-radius: var(--r2);
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
   color: inherit;
   text-decoration: none;
-  transition: background-color 150ms;
+  transition: opacity 180ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
-  a.row:hover {
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
+  .rows:hover a.row:not(:hover) {
+    opacity: 0.45;
   }
 }
-a.row:active {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
 a.row:focus-visible {
-  border-radius: var(--r2);
-  outline-offset: 0;
+  border-radius: var(--r1);
 }
 
 .art {
   position: relative;
   display: grid;
-  flex: none;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 5px;
   background: var(--surface);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--ink-3);
+}
+.cover .art {
+  width: 148px;
+  height: 148px;
+  border-radius: 10px;
+  font-size: 40px;
 }
 .art::after {
   content: '';
@@ -277,34 +359,22 @@ a.row:focus-visible {
 
 .text {
   display: grid;
-  flex: 1;
-  min-width: 0;
-}
-.line {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
   min-width: 0;
 }
 .title {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-align: left;
   font-size: 15px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--ink);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.when {
-  flex: none;
-}
 .sub {
   overflow: hidden;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--ink-3);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -320,9 +390,8 @@ a.row:focus-visible {
 .skeleton .art {
   background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
-.skeleton .when {
-  font-size: 14px;
-  line-height: 1.45;
+.skeleton .words {
+  gap: 10px;
 }
 
 .track-move {
@@ -344,7 +413,20 @@ a.row:focus-visible {
   opacity: 0;
 }
 
+@media (max-width: 640px) {
+  .latest {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: var(--s4);
+  }
+  .cover .art {
+    width: 112px;
+    height: 112px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .row {
+    transition: none;
+  }
   .eq.run span {
     animation: none;
   }
