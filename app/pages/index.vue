@@ -267,7 +267,10 @@ onBeforeUnmount(() => {
           <span class="slot">Yours goes here</span>
           <span class="button soft">Leave a sticker</span>
         </button>
-        <LazyGuestbookSection v-if="reaching || own?.left" overlay :asked="asked" :from="from" />
+        <!-- one place for the pad whether or not a sticker has been left, so it is never rebuilt part way through leaving one -->
+        <div :class="own?.left ? 'slot taken' : 'waiting'">
+          <LazyGuestbookSection v-if="reaching || own?.left" overlay :asked="asked" :from="from" />
+        </div>
       </div>
     </StickerWall>
     <div class="column foot">
@@ -807,10 +810,23 @@ onBeforeUnmount(() => {
   margin-top: 120px;
   padding: 88px var(--gutter-r) 88px var(--gutter-l);
 }
+/* as tall with a sticker left as without, so leaving one does not shrink the page under the visitor */
 .yours {
   display: grid;
+  align-content: start;
   justify-items: center;
-  gap: var(--s5);
+  min-height: calc(min(78vw, 330px) * 214 / 288 + 30px + 44px);
+}
+/* the slot once it is taken: a solid edge, and the thanks where the invitation was */
+.slot.taken {
+  padding: 0 var(--s5);
+  border-style: solid;
+  border-color: var(--line-strong);
+  font-family: inherit;
+  letter-spacing: 0;
+}
+.waiting {
+  position: absolute;
 }
 .ask {
   display: grid;
