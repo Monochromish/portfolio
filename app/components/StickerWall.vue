@@ -16,6 +16,9 @@ const MAX_LEAN = 8
 // a thrown sticker lands where this long a glide would take it, in ms, and no throw is faster than this, in px a second
 const GLIDE_MS = 220
 const FASTEST = 1200
+// a sticker under the cursor turns up to this far towards it, and a carried one this far into its move, in degrees
+const LOOK = 7
+const SWING = 13
 const SEED = 20260330
 
 interface Spot {
@@ -24,6 +27,10 @@ interface Spot {
   y: number
   rot: number
   ratio: number
+  // the cut edge inside the sticker's box, as shares of its width and height: the box has room around it for the shadow
+  cut: { l: string, t: string, r: string, b: string }
+  // its place in the order they go up, left to right
+  order: number
 }
 
 interface Carried {
@@ -81,6 +88,9 @@ let raf = 0
 let last = 0
 let above = 1
 let sizer: ResizeObserver | undefined
+let reduced = false
+// the order each sticker went up in, kept so a later layout does not replay its arrival
+const orders = new Map<number, number>()
 
 const drawable = (s: Sticker) => {
   const t = stickerTemplate(s.template)
@@ -154,8 +164,16 @@ function layout() {
     const tilt = sticker.rot * 2.2 + (next() - 0.5) * 9
     // one that could only land on another is left off
     if (!best || best.near < size.value * 0.95) continue
-    const view = stickerView(stickerTemplate(sticker.template)!)
-    placed.push({ sticker, x: best.x, y: best.y, rot: tilt, ratio: view.w / view.h })
+    const t = stickerTemplate(sticker.template)!
+    const view = stickerView(t)
+    const [x0, y0, x1, y1] = t.bounds
+    const share = (v: number, of: number) => `${(v / of * 100).toFixed(2)}%`
+    const cut = { l: share(x0 - t.border - view.x, view.w), t: share(y0 - t.border - view.y, view.h), r: share(x1 + t.border - view.x, view.w), b: share(y1 + t.border - view.y, view.h) }
+    placed.push({ sticker, x: best.x, y: best.y, rot: tilt, ratio: view.w / view.h, cut, order: 0 })
+  }
+  for (const p of [...placed].sort((a, b) => a.x - b.x)) {
+    if (!orders.has(p.sticker.id)) orders.set(p.sticker.id, orders.size)
+    p.order = orders.get(p.sticker.id)!
   }
   spots.value = placed
   emit('placed', placed.map(p => p.sticker.id))
@@ -191,6 +209,29 @@ function nearestFree(x: number, y: number) {
   return best
 }
 
+// a sticker under the cursor turns a little towards it, and the light on its vinyl follows
+function look(e: PointerEvent) {
+  const el = e.currentTarget as HTMLElement
+  if (reduced || e.pointerType !== 'mouse' || el.classList.contains('held')) return
+  const box = el.getBoundingClientRect()
+  const fx = clamp((e.clientX - box.left) / box.width, 0, 1)
+  const fy = clamp((e.clientY - box.top) / box.height, 0, 1)
+  shine(el, (fx - 0.5) * 2 * LOOK, (0.5 - fy) * 2 * LOOK, fx)
+}
+
+// turn: degrees about the upright axis. tip: about the level one. light: where the band of light sits, 0 at the left edge and 1 at the right
+function shine(el: HTMLElement, turn: number, tip: number, light: number) {
+  el.style.setProperty('--ty', `${turn.toFixed(2)}deg`)
+  el.style.setProperty('--tx', `${tip.toFixed(2)}deg`)
+  el.style.setProperty('--sh', `${(75 - 50 * light).toFixed(1)}%`)
+}
+
+function flat(el: HTMLElement) {
+  el.style.removeProperty('--ty')
+  el.style.removeProperty('--tx')
+  el.style.removeProperty('--sh')
+}
+
 function grab(spot: Spot, e: PointerEvent) {
   // a finger on a sticker scrolls the page
   if (e.pointerType === 'touch' || e.button || !wall.value) return
@@ -219,6 +260,12 @@ function grab(spot: Spot, e: PointerEvent) {
     it.x.x = x
     it.y.x = y
     at = now
+    // it swings into the way it is carried, and the light slides across it
+    if (!reduced) {
+      const sx = clamp(it.x.v / FASTEST, -1, 1)
+      const sy = clamp(it.y.v / FASTEST, -1, 1)
+      shine(el, sx * SWING, -sy * SWING, 0.5 - sx * 0.5)
+    }
     run()
   }
   const drop = () => {
@@ -226,6 +273,7 @@ function grab(spot: Spot, e: PointerEvent) {
     el.removeEventListener('pointerup', drop)
     el.removeEventListener('pointercancel', drop)
     el.classList.remove('held')
+    flat(el)
     it.held = false
     // a pointer that stopped before letting go throws nothing
     if (performance.now() - at > 90) it.x.v = it.y.v = 0
@@ -277,6 +325,7 @@ function step(now: number) {
 watch(newest, () => nextTick(layout))
 
 onMounted(() => {
+  reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
   let width = 0
   // only a width change moves the words; the wall's height follows them
   sizer = new ResizeObserver(() => {
@@ -300,14 +349,17 @@ onBeforeUnmount(() => {
     <canvas ref="field" class="dots" aria-hidden="true" />
     <div class="stickers" aria-hidden="true">
       <div
-        v-for="(p, i) in spots"
+        v-for="p in spots"
         :key="p.sticker.id"
         class="stuck"
-        :style="{ '--i': i, 'width': `${size}px`, 'aspect-ratio': p.ratio, 'transform': placing(p.x, p.y, p.rot, p.ratio) }"
+        :style="{ '--i': p.order, '--l': p.cut.l, '--t': p.cut.t, '--cx': p.cut.r, '--cy': p.cut.b, 'width': `${size}px`, 'aspect-ratio': p.ratio, 'transform': placing(p.x, p.y, p.rot, p.ratio) }"
         @pointerdown="grab(p, $event)"
+        @pointermove="look"
+        @pointerleave="flat($event.currentTarget as HTMLElement)"
       >
         <div class="lay">
           <StickerArt :template="p.sticker.template" :strokes="p.sticker.strokes" />
+          <span class="shine" />
         </div>
       </div>
     </div>
@@ -346,14 +398,40 @@ onBeforeUnmount(() => {
   -webkit-user-select: none;
   user-select: none;
   will-change: transform;
+  /* the light's corners are measured in shares of the sticker's own width */
+  container-type: inline-size;
 }
+/* put down, it settles a little past flat and comes back, as a pressed sticker does */
 .lay {
+  position: relative;
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.22));
-  transition: scale 180ms var(--ease-out), filter 180ms var(--ease-out);
-  animation: stick 320ms var(--ease-out) both;
-  animation-delay: calc(var(--i) * 55ms);
+  transform: perspective(640px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
+  transition: scale 420ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 180ms var(--ease-out), transform 260ms var(--ease-out);
+  animation: stick 440ms var(--ease-out) backwards;
+  animation-delay: calc(180ms + var(--i) * 60ms);
+}
+/* a band of light across the vinyl, which moves as the sticker turns */
+.shine {
+  position: absolute;
+  left: var(--l);
+  top: var(--t);
+  right: calc(100% - var(--cx));
+  bottom: calc(100% - var(--cy));
+  border-radius: 6.9cqw;
+  background: linear-gradient(105deg, transparent 36%, rgb(255 255 255 / 0.34) 50%, transparent 64%) no-repeat;
+  background-size: 300% 100%;
+  background-position: var(--sh, 50%) 0;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+.held .shine {
+  opacity: 1;
+}
+.held .lay {
+  transition-duration: 180ms, 180ms, 110ms;
 }
 :root.dark .lay {
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5));
@@ -362,24 +440,33 @@ onBeforeUnmount(() => {
   cursor: grabbing;
 }
 .held .lay {
-  scale: 1.07;
+  scale: 1.08;
   filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.3));
 }
 :root.dark .held .lay {
   filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.55));
 }
+/* each comes down from just above the wall, lands a touch flat and springs back */
 @keyframes stick {
   from {
     opacity: 0;
-    scale: 1.22;
+    scale: 1.26;
+    translate: 0 -12px;
   }
-  60% {
+  55% {
     opacity: 1;
+  }
+  72% {
+    scale: 0.975;
+    translate: 0 0;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   .stuck:not(.held):hover .lay {
     scale: 1.03;
+  }
+  .stuck:hover .shine {
+    opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {

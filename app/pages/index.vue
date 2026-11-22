@@ -18,6 +18,18 @@ const srcset = (file: string) => cover.widths.map(w => `/work/${file}-${w}.webp 
 
 // the one project of the row that is open, across the full row under the cards
 const open = ref<string | null>(null)
+// where each card sits in its row, so its panel can grow out from under it and fold back into it
+const grown = reactive<Record<string, { left: number, right: number }>>({})
+function toggle(slug: string, e: MouseEvent) {
+  const card = (e.currentTarget as HTMLElement).closest('.other')
+  const row = card?.parentElement
+  if (card && row) {
+    const c = card.getBoundingClientRect()
+    const r = row.getBoundingClientRect()
+    grown[slug] = { left: c.left - r.left, right: r.right - c.right }
+  }
+  open.value = open.value === slug ? null : slug
+}
 // projects the visitor has reached for: their screenshots load before the project opens
 const reached = reactive(new Set<string>())
 
@@ -226,20 +238,22 @@ onBeforeUnmount(() => {
               <p v-if="p.links.length" class="facts">
                 <a v-for="l in p.links" :key="l.href" class="text-link" :href="l.href" rel="noopener">{{ l.label }}</a>
               </p>
-              <button class="opens" type="button" :aria-expanded="open === p.slug" :aria-controls="`more-${p.slug}`" @click="open = open === p.slug ? null : p.slug">
+              <button class="opens" type="button" :aria-expanded="open === p.slug" :aria-controls="`more-${p.slug}`" @click="toggle(p.slug, $event)">
                 More<span class="plus" aria-hidden="true" />
               </button>
             </article>
-            <div v-show="open === p.slug" :id="`more-${p.slug}`" class="panel" role="region" :aria-label="`More about ${p.name}`">
-              <h4>{{ p.name }}</h4>
-              <div class="more" :class="{ solo: !p.shots.length }">
-                <ul class="points">
-                  <li v-for="point in p.points" :key="point">{{ point }}</li>
-                </ul>
-                <ShotStrip v-if="p.shots.length" :shots="p.shots" :label="`Screenshots of ${p.name}`" :eager="reached.has(p.slug)" :tall="p.shots.every(s => s.height > s.width)" />
-                <p v-if="p.note" class="small wide">{{ p.note }}</p>
+            <Transition name="grow">
+              <div v-show="open === p.slug" :id="`more-${p.slug}`" class="panel" role="region" :aria-label="`More about ${p.name}`" :style="{ '--from-l': `${grown[p.slug]?.left ?? 0}px`, '--from-r': `${grown[p.slug]?.right ?? 0}px` }">
+                <h4>{{ p.name }}</h4>
+                <div class="more" :class="{ solo: !p.shots.length }">
+                  <ul class="points">
+                    <li v-for="point in p.points" :key="point">{{ point }}</li>
+                  </ul>
+                  <ShotStrip v-if="p.shots.length" :shots="p.shots" :label="`Screenshots of ${p.name}`" :eager="reached.has(p.slug)" :tall="p.shots.every(s => s.height > s.width)" />
+                  <p v-if="p.note" class="small wide">{{ p.note }}</p>
+                </div>
               </div>
-            </div>
+            </Transition>
           </template>
         </div>
       </section>
@@ -750,7 +764,20 @@ onBeforeUnmount(() => {
   order: 1;
   padding: 30px 26px 32px;
   border-radius: 22px;
-  animation: unfold 240ms var(--ease-out);
+}
+.grow-enter-active {
+  animation: unfold 460ms var(--ease-out);
+}
+.grow-enter-active > * {
+  animation: arrive 320ms 140ms var(--ease-out) backwards;
+}
+/* closing is the same motion back: the words go first, then it folds up into its card and the page closes over it */
+.grow-leave-active {
+  overflow: clip;
+  animation: fold 340ms var(--ease-in-out) forwards;
+}
+.grow-leave-active > * {
+  animation: arrive 140ms ease reverse forwards;
 }
 .panel h4 {
   margin: 0 0 18px;
@@ -760,10 +787,30 @@ onBeforeUnmount(() => {
   letter-spacing: -0.01em;
   color: var(--ink);
 }
+/* it starts as wide as its card and no taller than the card's lower edge, then opens down and out to the full row */
 @keyframes unfold {
   from {
+    clip-path: inset(0 var(--from-r, 0px) 100% var(--from-l, 0px) round 22px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 22px);
+  }
+}
+@keyframes fold {
+  from {
+    clip-path: inset(0 0 0 0 round 22px);
+  }
+  to {
+    block-size: 0;
+    margin-bottom: calc(var(--s4) * -1);
+    padding-block: 0;
+    clip-path: inset(0 var(--from-r, 0px) 100% var(--from-l, 0px) round 22px);
+  }
+}
+@keyframes arrive {
+  from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(8px);
   }
 }
 
@@ -943,7 +990,9 @@ onBeforeUnmount(() => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .panel {
+  .grow-enter-active,
+  .grow-leave-active,
+  .panel > * {
     animation: none;
   }
   .swap > span,
