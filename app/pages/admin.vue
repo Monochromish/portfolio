@@ -198,9 +198,9 @@ onMounted(load)
   padding: 48px 0 128px;
 }
 .wrap {
-  max-width: 52rem;
+  max-width: 67.5rem;
   margin: 0 auto;
-  padding: 104px 24px 0;
+  padding: 104px max(var(--s5), env(safe-area-inset-right)) 0 max(var(--s5), env(safe-area-inset-left));
 }
 .top {
   display: flex;
@@ -211,20 +211,22 @@ onMounted(load)
 }
 h1 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 650;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: var(--t-title);
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: -0.022em;
 }
 h2 {
   display: flex;
   align-items: baseline;
   gap: 10px;
   margin: 0 0 6px;
-  font-size: 20px;
-  font-weight: 650;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
   line-height: 1.3;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.01em;
 }
 .more {
   display: flex;
@@ -248,12 +250,12 @@ h2 {
 /* the same page the public board uses */
 .wrap .queue {
   gap: 28px 24px;
-  padding: 26px 14px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  padding: 30px 26px 32px;
+  border-radius: 22px;
   background-color: var(--surface);
   background-image: radial-gradient(circle at 1px 1px, var(--line-strong) 1px, transparent 1.4px);
-  background-size: 18px 18px;
+  background-size: 26px 26px;
+  box-shadow: var(--edge);
 }
 .when {
   display: inline-flex;
@@ -280,38 +282,39 @@ h2 {
   align-items: center;
   gap: 7px;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: var(--r2);
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out);
+  transition: background-color 150ms ease, box-shadow 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
 .approve,
 .primary {
   padding: 0 16px 0 13px;
   background: var(--ink);
+  box-shadow: var(--edge-ink);
   color: var(--paper);
 }
 .primary {
   padding: 0 20px 0 16px;
 }
 .reject,
-.flip {
-  border: 1px solid var(--line-strong);
+.flip,
+.quiet-button {
+  background: var(--fill);
+  box-shadow: var(--edge);
   color: var(--ink);
 }
 .reject {
   padding: 0 16px 0 13px;
 }
 .quiet-button {
-  padding: 0 12px;
-  color: var(--ink-2);
-  font-weight: 550;
+  padding: 0 14px;
 }
 .flip {
   margin-top: 8px;
   padding: 0 16px;
-  font-weight: 550;
 }
 .approve span,
 .reject span,
@@ -327,14 +330,18 @@ h2 {
   opacity: 0.6;
 }
 @media (hover: hover) and (pointer: fine) {
+  :is(.approve, .reject, .primary, .quiet-button, .flip):hover {
+    border-radius: var(--r3);
+  }
   .approve:hover,
   .primary:hover {
-    background: color-mix(in srgb, var(--ink) 86%, var(--paper));
+    background: var(--ink-2);
   }
   .reject:hover,
   .flip:hover,
   .quiet-button:hover {
-    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    background: var(--fill-hover);
+    box-shadow: var(--edge-lift);
   }
 }
 .row-error {
