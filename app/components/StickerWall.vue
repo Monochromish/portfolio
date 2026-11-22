@@ -66,6 +66,8 @@ const props = defineProps<{ without?: readonly number[], grow?: boolean }>()
 const emit = defineEmits<{ placed: [ids: number[]] }>()
 defineSlots<{ default?: (props: { total: number }) => unknown }>()
 
+// a narrow screen has no room for them around the words, so its wall is bare and they keep to the board
+const roomy = useRoomy()
 const wall = ref<HTMLElement>()
 const field = ref<HTMLCanvasElement>()
 const dots = useWallDots(wall, field)
@@ -85,6 +87,7 @@ const drawable = (s: Sticker) => {
   return !!t && !stickerProblem(t, s.strokes)
 }
 const newest = computed(() => {
+  if (!roomy.value) return []
   const mine = own.value?.sticker
   const all = [...(mine ? [mine] : []), ...(data.value?.stickers ?? []).filter(s => s.id !== mine?.id)]
   return all.filter(s => drawable(s) && !props.without?.includes(s.id))

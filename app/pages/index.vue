@@ -34,6 +34,8 @@ function leaveOne(e: MouseEvent) {
   reaching.value = true
   asked.value++
 }
+// a narrow screen has a board of stickers at the end in place of the two walls of them
+const roomy = useRoomy()
 // the stickers the wall at the top had room for; the rest go up around the slot at the end
 const onTop = ref<number[]>([])
 
@@ -259,9 +261,10 @@ onBeforeUnmount(() => {
 
       <WritingSection />
       <NowSection />
+      <LazyGuestbookSection v-if="roomy === false" :asked="asked" :from="from" />
     </div>
 
-    <StickerWall class="end" :without="onTop" grow>
+    <StickerWall v-if="roomy !== false" class="end" :without="onTop" grow>
       <div class="yours" data-wall-clear data-wall-origin>
         <button v-if="!own?.left" type="button" class="ask" @pointerenter="reaching = true" @focus="reaching = true" @click="leaveOne">
           <span class="slot">Yours goes here</span>
@@ -901,6 +904,13 @@ onBeforeUnmount(() => {
   .earlier {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* the board in the column stands in for it */
+  .end {
+    display: none;
+  }
+  .foot {
+    margin-top: var(--s7);
+  }
   /* each opens right under its own card */
   .panel {
     order: 0;
@@ -915,10 +925,8 @@ onBeforeUnmount(() => {
   }
 }
 @media (max-width: 640px) {
-  /* stickers have the band above the words */
   .top {
     justify-items: start;
-    padding-top: 148px;
   }
   .left {
     justify-content: flex-start;

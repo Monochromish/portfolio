@@ -184,11 +184,4 @@ function home(e: MouseEvent) {
   margin: 0 auto;
   padding: 0 var(--gutter-r) var(--s7) var(--gutter-l);
 }
-@media (max-width: 640px) {
-  /* stickers have the band between the header and the words */
-  .scene {
-    place-items: start;
-    padding-top: calc(76px + 132px);
-  }
-}
 </style>
