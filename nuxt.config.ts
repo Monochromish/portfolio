@@ -25,6 +25,7 @@ export default defineNuxtConfig({
     ownerGithubId: '',
     appSecret: '',
     moderatorToken: '',
+    notifyEmail: '',
     public: {
       siteUrl: 'https://himanshu.sh',
       turnstileSiteKey: '',
@@ -62,6 +63,7 @@ export default defineNuxtConfig({
         d1_databases: [{ binding: 'DB', database_name: 'himanshu', database_id: process.env.NUXT_D1_DATABASE_ID }],
         // @ts-expect-error Nitro's bundled Wrangler types predate the rate-limit binding; wrangler.json gets it as written
         ratelimits: [{ name: 'GUESTBOOK_RL', namespace_id: '1001', simple: { limit: 3, period: 60 } }],
+        send_email: [{ name: 'STICKER_MAIL' }],
         observability: { enabled: true },
         limits: { cpu_ms: 100 },
         workers_dev: false,

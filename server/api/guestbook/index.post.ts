@@ -18,6 +18,7 @@ export default defineEventHandler(async (event): Promise<GuestbookReceipt> => {
   const place = await settledPlace(submission.template, submission)
   const { id, created } = await insertPendingSticker(submission.template, submission.strokes, place, country, hashes, asn)
   await rememberSticker(event, id, created)
+  announceSticker(event, id, submission.template, country)
   setResponseStatus(event, 201)
   return { status: 'pending', id, country, x: place.x, y: place.y }
 })

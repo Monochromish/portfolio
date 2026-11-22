@@ -4,6 +4,7 @@ import type { H3Event } from 'h3'
 
 export interface CloudflareContext {
   env: Record<string, unknown>
+  context: { waitUntil: (promise: Promise<unknown>) => void }
   url: URL
 }
 
