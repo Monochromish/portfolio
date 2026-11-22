@@ -26,7 +26,16 @@ const older = [...earlier].sort((a, b) => Number(b.year) - Number(a.year))
 // the pad opens over the page, growing out of whichever button asked for it
 const leave = ref<{ open: (from?: DOMRect) => void }>()
 const { data: own } = useNuxtData<OwnSticker>('guestbook-mine')
-const leaveOne = (e: MouseEvent) => leave.value?.open((e.currentTarget as HTMLElement).getBoundingClientRect())
+// the pad and the board load when a visitor reaches for the button, so the page does not wait on their code and styles
+const reaching = ref(false)
+let from: DOMRect | undefined
+function leaveOne(e: MouseEvent) {
+  from = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  reaching.value = true
+  leave.value?.open(from)
+}
+// a press that came before they had loaded opens the pad as soon as they have
+watch(leave, pad => from && pad?.open(from))
 // the stickers the wall at the top had room for; the rest go up around the slot at the end
 const onTop = ref<number[]>([])
 
@@ -132,7 +141,7 @@ onBeforeUnmount(() => {
 
         <p class="left" data-wall-clear>
           <NuxtLink v-if="total" to="/stickers" class="meta count">{{ total }} {{ total === 1 ? 'sticker' : 'stickers' }} left by visitors</NuxtLink>
-          <button v-if="!own?.left" type="button" class="button soft" @click="leaveOne">Leave a sticker</button>
+          <button v-if="!own?.left" type="button" class="button soft" @pointerenter="reaching = true" @focus="reaching = true" @click="leaveOne">Leave a sticker</button>
         </p>
       </header>
     </StickerWall>
@@ -161,7 +170,7 @@ onBeforeUnmount(() => {
               :class="pic.only && `only-${pic.only}`"
               :src="`/work/${pic.file}-${cover.widths[0]}.webp`"
               :srcset="srcset(pic.file)"
-              sizes="(max-width: 900px) 112vw, 780px"
+              sizes="(max-width: 900px) 100vw, 780px"
               :width="cover.width"
               :height="cover.height"
               :alt="pic.alt"
@@ -240,11 +249,11 @@ onBeforeUnmount(() => {
 
     <StickerWall class="end" :without="onTop" grow>
       <div class="yours" data-wall-clear data-wall-origin>
-        <button v-if="!own?.left" type="button" class="ask" @click="leaveOne">
+        <button v-if="!own?.left" type="button" class="ask" @pointerenter="reaching = true" @focus="reaching = true" @click="leaveOne">
           <span class="slot">Yours goes here</span>
           <span class="button soft">Leave a sticker</span>
         </button>
-        <GuestbookSection ref="leave" overlay />
+        <LazyGuestbookSection v-if="reaching || own?.left" ref="leave" overlay />
       </div>
     </StickerWall>
     <div class="column foot">

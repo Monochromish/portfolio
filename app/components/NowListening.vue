@@ -11,7 +11,8 @@ const SKELETON = [['48%', '30%'], ['72%', '44%'], ['56%', '34%']] as const
 const fullDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 
 // Last.fm resizes and re-encodes art by path; 174s is 174 px
-const smallArt = (url: string) => url.replace(/\/i\/u\/[^/]+\/([0-9a-f]+)\.\w+$/, '/i/u/174s/$1.webp')
+const sized = (url: string, size: string) => url.replace(/\/i\/u\/[^/]+\/([0-9a-f]+)\.\w+$/, `/i/u/${size}/$1.webp`)
+const smallArt = (url: string) => sized(url, '174s')
 const brokenArt = shallowReactive(new Set<string>())
 const loadedArt = shallowReactive(new Set<string>())
 
@@ -24,7 +25,9 @@ const rows = computed(() => tracks.value.map((t) => {
   const art = t.art ? [smallArt(t.art), t.art].find(src => !brokenArt.has(src)) ?? null : null
   // the newest track is shown large, so it takes the full-size art first
   const cover = t.art ? [t.art, smallArt(t.art)].find(src => !brokenArt.has(src)) ?? null : null
-  return { ...t, key: t.url, art, cover }
+  // a 36 px row takes the 64 px file on an ordinary screen and the 174 px one on a sharper screen
+  const artSet = t.art && art === smallArt(t.art) ? `${sized(t.art, '64s')} 64w, ${art} 174w` : undefined
+  return { ...t, key: t.url, art, artSet, cover }
 }))
 
 const latest = computed(() => rows.value[0])
@@ -157,6 +160,8 @@ function ago(at: number) {
               <img
                 v-if="r.art"
                 :src="r.art"
+                :srcset="r.artSet"
+                sizes="36px"
                 :class="{ loaded: loadedArt.has(r.art) }"
                 alt=""
                 width="36"
@@ -266,6 +271,7 @@ a.latest:focus-visible {
   width: calc(100% + 12px);
   height: calc(100% + 12px);
   border-radius: 30px;
+  object-fit: cover;
   filter: blur(44px) saturate(1.5);
   opacity: 0.5;
   pointer-events: none;

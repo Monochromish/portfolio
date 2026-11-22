@@ -10,8 +10,10 @@ const now = useNow()
 const SKELETON = ['78%', '92%', '64%', '84%'] as const
 const longDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' })
 
-// Letterboxd sizes posters by path; 460x690 covers a tile up to 230 px wide at 2x
-const smallPoster = (url: string) => url.replace(/-0-\d+-0-\d+-crop/, '-0-460-0-690-crop')
+// Letterboxd sizes posters by path; the browser takes the smallest of these that is still sharp on its screen
+const sized = (url: string, w: number) => url.replace(/-0-\d+-0-\d+-crop/, `-0-${w}-0-${w * 1.5}-crop`)
+const smallPoster = (url: string) => sized(url, 460)
+const posterSet = (url: string) => [150, 230, 460].map(w => `${sized(url, w)} ${w}w`).join(', ')
 const brokenPoster = shallowReactive(new Set<string>())
 const loadedPoster = shallowReactive(new Set<string>())
 
@@ -19,6 +21,8 @@ const rows = computed(() => (data.value ?? []).slice(0, 4).map((f, i) => ({
   ...f,
   key: `${f.url}#${i}`,
   poster: f.poster ? [smallPoster(f.poster), f.poster].find(src => !brokenPoster.has(src)) ?? null : null,
+  // only while the sized files load; a poster that fell back to its original has no sizes to choose from
+  posterSet: f.poster && !brokenPoster.has(smallPoster(f.poster)) ? posterSet(f.poster) : undefined,
   day: f.watchedOn ? watchedDay(f.watchedOn) : null,
 })))
 
@@ -61,6 +65,8 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
             <img
               v-if="f.poster"
               :src="f.poster"
+              :srcset="f.posterSet"
+              sizes="(max-width: 899px) 22vw, 150px"
               :class="{ loaded: loadedPoster.has(f.poster) }"
               alt=""
               width="230"
