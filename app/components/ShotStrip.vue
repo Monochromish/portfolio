@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Shot } from '#shared/work'
 
-// eager: the project is about to open, so load and decode now, not mid-animation
-const props = defineProps<{ shots: Shot[], label: string, eager?: boolean }>()
+// eager: the project is about to open, so load and decode now, not mid-animation.
+// tall: every screenshot is taller than it is wide, so the strip is given more height to show them at a readable size
+const props = defineProps<{ shots: Shot[], label: string, eager?: boolean, tall?: boolean }>()
 const dark = useState<boolean>('dark', () => false)
 
 const strip = ref<HTMLElement>()
@@ -49,7 +50,7 @@ onMounted(measure)
 </script>
 
 <template>
-  <div class="shots">
+  <div class="shots" :class="{ tall }">
     <ul ref="strip" class="strip" role="list" :aria-label="label" :tabindex="props.shots.length > 1 ? 0 : undefined" @scroll.passive="measure">
       <li v-for="shot in props.shots" :key="shot.file" class="slide">
         <img
@@ -99,6 +100,9 @@ onMounted(measure)
   flex: none;
   height: clamp(180px, 46vw, 288px);
   scroll-snap-align: start;
+}
+.tall .slide {
+  height: clamp(300px, 70vw, 460px);
 }
 .slide img {
   display: block;

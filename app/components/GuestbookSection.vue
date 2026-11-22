@@ -4,8 +4,9 @@ import type { ComponentPublicInstance } from 'vue'
 import type { OwnSticker, Placement, Sticker, StickerPage } from '#shared/types'
 import type { BoardSticker, StickerDraft } from './StickerBoard.vue'
 
-// overlay: no section of its own; the pad and then the board open over whatever page it is on
-const props = defineProps<{ page?: boolean, overlay?: boolean }>()
+// overlay: no section of its own; the pad and then the board open over whatever page it is on.
+// asked counts the presses that ask for the pad, and from is the button the latest one came from
+const props = defineProps<{ page?: boolean, overlay?: boolean, asked?: number, from?: DOMRect }>()
 
 // the board shows the newest 24 stickers, the most the API sends at once
 const LIMIT = 24
@@ -107,7 +108,13 @@ watch(draft, async (d) => {
   else if (!d && el.open) el.close()
 })
 
-defineExpose({ open: (from?: DOMRect) => form.value?.open(from) })
+// it may be mounted by the very press that asks for the pad, so the first one is answered once the pad exists
+watch(() => props.asked, (asked) => {
+  if (asked) form.value?.open(props.from)
+}, { flush: 'post' })
+onMounted(() => {
+  if (props.asked) form.value?.open(props.from)
+})
 
 async function loadOlder() {
   if (loadingOlder.value || !next.value) return

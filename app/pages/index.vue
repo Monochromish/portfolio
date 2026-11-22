@@ -24,24 +24,26 @@ const reached = reactive(new Set<string>())
 const older = [...earlier].sort((a, b) => Number(b.year) - Number(a.year))
 
 // the pad opens over the page, growing out of whichever button asked for it
-const leave = ref<{ open: (from?: DOMRect) => void }>()
 const { data: own } = useNuxtData<OwnSticker>('guestbook-mine')
 // the pad and the board load when a visitor reaches for the button, so the page does not wait on their code and styles
 const reaching = ref(false)
-let from: DOMRect | undefined
+const asked = ref(0)
+const from = shallowRef<DOMRect>()
 function leaveOne(e: MouseEvent) {
-  from = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  from.value = (e.currentTarget as HTMLElement).getBoundingClientRect()
   reaching.value = true
-  leave.value?.open(from)
+  asked.value++
 }
-// a press that came before they had loaded opens the pad as soon as they have
-watch(leave, pad => from && pad?.open(from))
 // the stickers the wall at the top had room for; the rest go up around the slot at the end
 const onTop = ref<number[]>([])
 
 useHead({
   link: [{ rel: 'preload', href: '/fonts/funnel-display.woff2', as: 'font', type: 'font/woff2', crossorigin: '' }],
 })
+
+// the footnote a link has just pointed at
+const cited = ref('')
+let uncite: ReturnType<typeof setTimeout> | undefined
 
 const copied = ref(false)
 const status = ref('')
@@ -79,10 +81,21 @@ async function reveal() {
     return
   }
   const closed = target.closest('details:not([open])') ?? document.querySelector(`details[data-for="${target.id}"]:not([open])`)
-  if (!(closed instanceof HTMLDetailsElement)) return
-  closed.open = true
+  if (closed instanceof HTMLDetailsElement) closed.open = true
+  if (!target.classList.contains('small')) return
+  // a footnote is small grey text: it comes to the middle of the screen and is marked for a moment, so the eye lands on it
   await nextTick()
-  target.scrollIntoView()
+  target.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  cited.value = target.id
+  clearTimeout(uncite)
+  uncite = setTimeout(() => {
+    cited.value = ''
+  }, 2400)
+}
+
+// a second press on a link the address already points at changes nothing in the address, so it is answered here
+function again(e: MouseEvent) {
+  if (location.hash === (e.currentTarget as HTMLAnchorElement).hash) reveal()
 }
 
 onMounted(() => {
@@ -92,6 +105,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimeout(reset)
+  clearTimeout(uncite)
   window.removeEventListener('hashchange', reveal)
 })
 </script>
@@ -112,7 +126,7 @@ onBeforeUnmount(() => {
 
           <p class="say">
             I build <a class="text-link" href="https://cider.sh" rel="noopener">Cider</a>, the Apple&nbsp;Music client for Windows, macOS and Linux,
-            <span class="quiet">installed more than 250,000 times.</span><a class="mark" href="#cider-count" aria-label="How this is counted">*</a>
+            <span class="quiet">installed more than 250,000 times.</span><a class="mark" href="#cider-count" aria-label="How this is counted" @click="again">*</a>
           </p>
           <p class="lede">
             I’m {{ alias ? 'Himanshu Adwani' : 'Himanshu' }}, though Isaiah is totally fine if that’s easier to say. I study computer science at
@@ -160,7 +174,7 @@ onBeforeUnmount(() => {
             </p>
             <p v-for="s in lead.stats" :key="s.label" class="stat">
               <strong>{{ s.value }}</strong>
-              <span>{{ s.label }}<a v-if="s.note" class="mark" :href="`#${s.note}`" aria-label="How this is counted">*</a></span>
+              <span>{{ s.label }}<a v-if="s.note" class="mark" :href="`#${s.note}`" aria-label="How this is counted" @click="again">*</a></span>
             </p>
           </div>
           <div class="cover">
@@ -186,7 +200,7 @@ onBeforeUnmount(() => {
               <li v-for="point in lead.points" :key="point">{{ point }}</li>
             </ul>
             <ShotStrip v-if="lead.shots.length > 1" :shots="lead.shots.slice(1)" :label="`More screenshots of ${lead.name}`" :eager="reached.has(lead.slug)" />
-            <p v-if="lead.footnote" :id="lead.footnote.id" class="small wide">
+            <p v-if="lead.footnote" :id="lead.footnote.id" class="small wide" :class="{ cited: cited === lead.footnote.id }">
               * {{ lead.footnote.text }}<template v-if="lead.footnote.link">{{ ' ' }}<a class="text-link" :href="lead.footnote.link.href" rel="noopener">{{ lead.footnote.link.label }}</a>.</template>
             </p>
           </div>
@@ -220,7 +234,7 @@ onBeforeUnmount(() => {
                 <ul class="points">
                   <li v-for="point in p.points" :key="point">{{ point }}</li>
                 </ul>
-                <ShotStrip v-if="p.shots.length" :shots="p.shots" :label="`Screenshots of ${p.name}`" :eager="reached.has(p.slug)" />
+                <ShotStrip v-if="p.shots.length" :shots="p.shots" :label="`Screenshots of ${p.name}`" :eager="reached.has(p.slug)" :tall="p.shots.every(s => s.height > s.width)" />
                 <p v-if="p.note" class="small wide">{{ p.note }}</p>
               </div>
             </div>
@@ -253,7 +267,7 @@ onBeforeUnmount(() => {
           <span class="slot">Yours goes here</span>
           <span class="button soft">Leave a sticker</span>
         </button>
-        <LazyGuestbookSection v-if="reaching || own?.left" ref="leave" overlay />
+        <LazyGuestbookSection v-if="reaching || own?.left" overlay :asked="asked" :from="from" />
       </div>
     </StickerWall>
     <div class="column foot">
@@ -655,6 +669,18 @@ onBeforeUnmount(() => {
   line-height: 1.55;
   color: var(--ink-3);
 }
+/* the mark reaches a little past the text, and goes as slowly as it came quickly */
+.small[id] {
+  margin: calc(var(--s2) * -1) calc(var(--s3) * -1);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r1);
+  transition: background-color 900ms ease, color 900ms ease;
+}
+.cited {
+  background: var(--fill-hover);
+  color: var(--ink);
+  transition-duration: 150ms;
+}
 
 /* three cards of one height; the one that opens does so across the row under them */
 .others {
@@ -900,6 +926,7 @@ onBeforeUnmount(() => {
   .plus::before,
   .plus::after,
   .slot,
+  .small[id],
   .deep::details-content {
     transition: none;
   }
