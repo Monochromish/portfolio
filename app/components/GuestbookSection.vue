@@ -4,7 +4,8 @@ import type { ComponentPublicInstance } from 'vue'
 import type { OwnSticker, Placement, Sticker, StickerPage } from '#shared/types'
 import type { BoardSticker, StickerDraft } from './StickerBoard.vue'
 
-const props = defineProps<{ page?: boolean }>()
+// overlay: no section of its own; the pad and then the board open over whatever page it is on
+const props = defineProps<{ page?: boolean, overlay?: boolean }>()
 
 // the board shows the newest 24 stickers, the most the API sends at once
 const LIMIT = 24
@@ -38,6 +39,7 @@ const problem = ref('')
 const form = ref<{ post: (place: Placement, shareCountry: boolean) => Promise<string | null>, open: (from?: DOMRect) => void, back: () => void }>()
 const opener = ref<HTMLButtonElement>()
 const board = ref<ComponentPublicInstance>()
+const sheet = ref<HTMLDialogElement>()
 let boardWas: number | null = null
 const boardTop = () => (board.value?.$el as HTMLElement | undefined)?.getBoundingClientRect().top ?? 0
 
@@ -83,7 +85,8 @@ async function onStick(place: Placement, shareCountry: boolean) {
     return
   }
   draft.value = null
-  if (boardWas !== null) window.scrollBy(0, boardTop() - boardWas)
+  // on a page the board moves as the placing bar under it goes; over a page there is nothing to keep still
+  if (boardWas !== null && !props.overlay) window.scrollBy(0, boardTop() - boardWas)
   boardWas = null
 }
 
@@ -94,6 +97,17 @@ async function onCancel() {
   await nextTick()
   form.value?.back()
 }
+
+// the board comes up for the sticker to be placed, and goes once it is stuck on or the visitor backs out
+watch(draft, async (d) => {
+  await nextTick()
+  const el = sheet.value
+  if (!el) return
+  if (d && !el.open) el.showModal()
+  else if (!d && el.open) el.close()
+})
+
+defineExpose({ open: (from?: DOMRect) => form.value?.open(from) })
 
 async function loadOlder() {
   if (loadingOlder.value || !next.value) return
@@ -114,7 +128,22 @@ async function loadOlder() {
 </script>
 
 <template>
-  <section id="stickers" class="section" :class="{ page }" aria-labelledby="stickers-title">
+  <div v-if="overlay" class="overlay">
+    <GuestbookForm ref="form" :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
+    <dialog ref="sheet" class="sheet" aria-label="Place your sticker" @cancel.prevent="onCancel">
+      <StickerBoard
+        v-if="draft"
+        ref="board"
+        :stickers="shown"
+        :draft="draft"
+        :posting="posting"
+        :problem="problem"
+        @place="onStick"
+        @cancel="onCancel"
+      />
+    </dialog>
+  </div>
+  <section v-else id="stickers" class="section" :class="{ page }" aria-labelledby="stickers-title">
     <div class="head">
       <component :is="page ? 'h1' : 'h2'" id="stickers-title" :class="page ? 'page-title' : 'label title'">
         {{ page ? 'Sticker book' : 'Stickers' }}<template v-if="!page && total">, {{ total }} left by visitors</template>
@@ -152,6 +181,45 @@ async function loadOlder() {
 </template>
 
 <style scoped>
+/* the notice a visitor gets once theirs is in sits centred under the slot it filled */
+.overlay :deep(.notice) {
+  justify-content: center;
+  margin: 0;
+}
+.sheet {
+  width: min(55rem, calc(100vw - 2 * var(--s4)));
+  max-height: calc(100dvh - 2 * var(--s4));
+  margin: auto;
+  padding: var(--s4);
+  border-radius: var(--r4);
+  background: var(--surface);
+  box-shadow: var(--edge), 0 24px 64px -16px rgb(0 0 0 / 0.5);
+  color: var(--ink-2);
+  opacity: 0;
+  scale: 0.97;
+  transition: opacity 180ms ease, scale 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
+}
+.sheet[open] {
+  opacity: 1;
+  scale: 1;
+}
+@starting-style {
+  .sheet[open] {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+.sheet :deep(.board-wrap) {
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    transition: none;
+  }
+}
 /* the row is as tall as its button; pulled up so the heading, centred in it, starts where every other section's does */
 .head {
   display: flex;
