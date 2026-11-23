@@ -81,7 +81,6 @@
   --s6: 32px;
   --s7: 48px;
   --s8: 64px;
-  --s9: 96px;
   --r1: 8px;
   --r2: 12px;
   --r3: 18px;
@@ -375,10 +374,6 @@ button {
   content: '';
   position: absolute;
   inset: -10px -6px;
-}
-
-.tnum {
-  font-variant-numeric: tabular-nums;
 }
 
 /* 76 px is the fixed header; the footer keeps to the bottom of a short page */

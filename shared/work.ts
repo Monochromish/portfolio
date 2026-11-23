@@ -1,13 +1,3 @@
-// left, top and width in percent of the composition box, then tilt in degrees
-export interface Pose {
-  x: number
-  y: number
-  width: number
-  rx: number
-  ry: number
-  rz: number
-}
-
 export interface Shot {
   // served from /work/<file>-<width>.webp
   file: string
@@ -16,15 +6,11 @@ export interface Shot {
   height: number
   alt: string
   light?: { file: string, alt: string }
-  wide: Pose
-  narrow: Pose
 }
 
 export interface Project {
   slug: string
   name: string
-  role: string
-  org: string
   period: string
   // the one line under the project's name in the home page's list
   brief: string
@@ -37,8 +23,6 @@ export interface Project {
   field: string
   ink: string
   glow?: string
-  // the aspect ratio of the composition in each layout
-  stage?: { wide: string, narrow: string }
   shots: Shot[]
 }
 
@@ -46,8 +30,6 @@ export const projects: Project[] = [
   {
     slug: 'cider',
     name: 'Cider',
-    role: 'Senior Lead Developer',
-    org: 'Cider Collective',
     period: 'Nov 2022 to now',
     brief: 'Senior Lead Developer, Cider Collective',
     summary: 'Cider is a paid Apple Music client for Windows, macOS and Linux. I\u00a0work across its Vue interface and its Electron and .NET apps.',
@@ -69,7 +51,6 @@ export const projects: Project[] = [
     field: '#b8354d',
     ink: '#ffffff',
     glow: '#f2785c',
-    stage: { wide: '1040 / 440', narrow: '300 / 230' },
     shots: [
       {
         file: 'cider-album',
@@ -81,8 +62,6 @@ export const projects: Project[] = [
           file: 'cider-album-light',
           alt: 'Cider on Windows in light mode, showing the album Popstar by Tinashe: the cover, Play and Shuffle buttons and the track list, with Melatonin playing in the floating bar at the bottom and the queue of what plays next in a panel along the right edge.',
         },
-        wide: { x: 3, y: 2, width: 60, rx: 10, ry: 16, rz: -3 },
-        narrow: { x: 0, y: 3, width: 80, rx: 10, ry: 14, rz: -3 },
       },
       {
         file: 'cider-lyrics',
@@ -90,16 +69,12 @@ export const projects: Project[] = [
         width: 1920,
         height: 1080,
         alt: 'Cider’s fullscreen lyrics view, tinted green, playing Vueltas by Not For Radio: the album’s artwork fills the window, the current line is set large on a frosted panel to the right with its words lighting up green as they are sung, and the playback bar floats along the bottom.',
-        wide: { x: 43, y: 42, width: 54, rx: 12, ry: -18, rz: 4 },
-        narrow: { x: 30, y: 45, width: 70, rx: 12, ry: -16, rz: 4 },
       },
     ],
   },
   {
     slug: 'nittany-motorsports',
     name: 'Nittany Motorsports',
-    role: 'Firmware Project Manager',
-    org: 'Penn State Formula SAE Electric, electronics team',
     period: 'Sep 2026 to now',
     brief: 'Firmware Project Manager, Penn State Formula SAE Electric',
     summary: 'Telemetry and firmware tooling for the team’s electric race car, including the telemetry page the team reads while the car is running.',
@@ -113,7 +88,6 @@ export const projects: Project[] = [
     field: '#1d4688',
     ink: '#ffffff',
     glow: '#3f8fe0',
-    stage: { wide: '1040 / 360', narrow: '300 / 226' },
     shots: [
       {
         file: 'nms-ota',
@@ -121,8 +95,6 @@ export const projects: Project[] = [
         width: 648,
         height: 399,
         alt: 'The OTA Updates page of the team’s NMS Electronics tool: a picker for a .bin firmware file, buttons to flash the front ECU, the rear ECU or the TCU, and what each one runs, 9f3a21c7 from develop/2026 on the front ECU and the TCU and 4b7e0d12 from isaiah-ots-updates on the rear.',
-        wide: { x: 3, y: 54, width: 40, rx: 12, ry: 10, rz: -5 },
-        narrow: { x: 0, y: 48, width: 58, rx: 12, ry: 8, rz: -5 },
       },
       {
         file: 'nms-telemetry',
@@ -130,16 +102,12 @@ export const projects: Project[] = [
         width: 1920,
         height: 776,
         alt: 'The same tool’s telemetry page reading four signals live: both brake pressure sensors at 0.0 psi and both accelerator pedal sensors near 99 percent, each last heard now, with a graph of each below in which the pedal traces climb from about 70 to 100 percent. A counter at the top reads 17121 frames, 754 a second.',
-        wide: { x: 32, y: 4, width: 65, rx: 16, ry: -7, rz: 2 },
-        narrow: { x: 10, y: 4, width: 90, rx: 14, ry: -6, rz: 2 },
       },
     ],
   },
   {
     slug: 'gust',
     name: 'Gust',
-    role: 'Encrypted peer-to-peer file transfer',
-    org: 'C# and .NET',
     period: 'Sep 2026',
     brief: 'Encrypted peer-to-peer file transfer, in C# and .NET',
     summary: 'Files and clipboard between your own devices, directly, with nothing in the middle. I started it out of frustration that there’s no Continuity between Windows and Apple devices.',
@@ -151,7 +119,6 @@ export const projects: Project[] = [
     field: '#1f6b4f',
     ink: '#ffffff',
     glow: '#4fbf94',
-    stage: { wide: '1040 / 400', narrow: '300 / 260' },
     shots: [
       {
         file: 'gust-devices',
@@ -163,16 +130,12 @@ export const projects: Project[] = [
           file: 'gust-devices-light',
           alt: 'Gust’s window in light mode, on a PC named ISAIAHSDESKTOP that is receiving and visible on its network. Under Devices, 2 paired and 1 nearby, a line runs from its profile picture to Homelab, which is getting one file, 65 percent sent, and a dashed line runs to an iPhone last seen 42 minutes ago; Isaiah’s Surface, between them, is nearby but not paired. A bar along the bottom reads Sending 1 file to Homelab, 7.8 MB of 12.0 MB at 1.9 MB/s.',
         },
-        wide: { x: 21, y: 2, width: 27, rx: 4, ry: 20, rz: -2 },
-        narrow: { x: 6, y: 2, width: 50, rx: 4, ry: 18, rz: -2 },
       },
     ],
   },
   {
     slug: 'airplay-core',
     name: 'airplay-core',
-    role: 'AirPlay 2 sender library',
-    org: 'Rust',
     period: 'Oct 2026',
     brief: 'AirPlay 2 sender library, in Rust',
     summary: 'An AirPlay 2 sender written in Rust as interoperability research, verified with realtime ALAC playback on Apple TV 4K hardware.',
