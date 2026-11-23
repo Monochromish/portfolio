@@ -8,8 +8,8 @@ const gone = reactive({ listening: false, watching: false })
       Now
     </h2>
     <div class="columns">
-      <NowListening @unavailable="gone.listening = true" />
-      <NowWatching @unavailable="gone.watching = true" />
+      <NowListening class="column" @unavailable="gone.listening = true" />
+      <NowWatching class="column" @unavailable="gone.watching = true" />
     </div>
   </section>
 </template>
@@ -19,14 +19,16 @@ const gone = reactive({ listening: false, watching: false })
   display: grid;
   gap: 72px;
 }
+
 @media (min-width: 900px) {
   .columns {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     align-items: start;
     column-gap: 64px;
   }
+
   /* one without the other keeps its own width; four posters across the whole page would be huge */
-  .columns > :only-child {
+  .column:only-child {
     grid-column: 1 / -1;
     max-width: 40rem;
   }

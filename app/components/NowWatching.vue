@@ -59,7 +59,7 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
 
     <ul v-else class="films" role="list">
       <li v-for="f in rows" :key="f.key">
-        <a class="film" :href="f.url" rel="noopener">
+        <a class="film link" :href="f.url" rel="noopener">
           <span class="poster">
             <span class="i-site-film" aria-hidden="true" />
             <img
@@ -67,6 +67,7 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
               :src="f.poster"
               :srcset="f.posterSet"
               sizes="(max-width: 899px) 22vw, 150px"
+              class="cover"
               :class="{ loaded: loadedPoster.has(f.poster) }"
               alt=""
               width="230"
@@ -106,12 +107,14 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
 .col {
   min-width: 0;
 }
+
 .head {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: var(--s2);
 }
+
 .label {
   display: flex;
   align-items: center;
@@ -122,6 +125,7 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   line-height: 1.4;
   color: var(--ink-3);
 }
+
 .films {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -130,15 +134,36 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
   padding: 0;
   list-style: none;
 }
+
+@media (max-width: 640px) {
+  .films {
+    gap: var(--s3);
+  }
+}
+
 .film {
   display: block;
   color: inherit;
   text-decoration: none;
   transition: opacity 180ms ease;
 }
-a.film:focus-visible {
+
+@media (hover: hover) and (pointer: fine) {
+  .films:hover .link:not(:hover) {
+    opacity: 0.45;
+  }
+}
+
+.link:focus-visible {
   border-radius: var(--r2);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .film {
+    transition: none;
+  }
+}
+
 .poster {
   position: relative;
   display: grid;
@@ -151,6 +176,7 @@ a.film:focus-visible {
   color: var(--ink-3);
   transition: transform 220ms var(--ease-out);
 }
+
 .poster::after {
   content: '';
   position: absolute;
@@ -159,7 +185,24 @@ a.film:focus-visible {
   box-shadow: inset 0 0 0 1px var(--line);
   pointer-events: none;
 }
-.poster img {
+
+.skeleton .poster {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link:hover .poster {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster {
+    transition: none;
+  }
+}
+
+.cover {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -168,9 +211,11 @@ a.film:focus-visible {
   opacity: 0;
   transition: opacity 200ms var(--ease-out);
 }
-.poster img.loaded {
+
+.cover.loaded {
   opacity: 1;
 }
+
 .title {
   display: block;
   margin-top: var(--s3);
@@ -179,6 +224,13 @@ a.film:focus-visible {
   line-height: 1.3;
   color: var(--ink);
 }
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 14px;
+  }
+}
+
 .sub {
   display: flex;
   flex-wrap: wrap;
@@ -190,50 +242,38 @@ a.film:focus-visible {
   line-height: 1.45;
   color: var(--ink-3);
 }
-@media (hover: hover) and (pointer: fine) {
-  .films:hover a.film:not(:hover) {
-    opacity: 0.45;
-  }
-  a.film:hover .poster {
-    transform: translateY(-4px);
-  }
+
+.skeleton .sub {
+  display: block;
 }
-@media (max-width: 640px) {
-  .films {
-    gap: var(--s3);
-  }
-  .title {
-    font-size: 14px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .film,
-  .poster {
-    transition: none;
-  }
-}
+
 .stars {
   display: inline-flex;
   gap: 1px;
 }
+
 .star {
   position: relative;
   display: inline-grid;
   font-size: 13px;
   color: var(--line-strong);
 }
+
 .star.full {
   color: var(--ink-2);
 }
+
 .star .i-site-star-half {
   position: absolute;
   inset: 0;
   color: var(--ink-2);
 }
+
 .liked {
   font-size: 14px;
   color: var(--ink-2);
 }
+
 .rewatch {
   font-size: 15px;
   color: var(--ink-3);
@@ -245,11 +285,5 @@ a.film:focus-visible {
   border-radius: 999px;
   background: color-mix(in srgb, var(--ink) 8%, transparent);
   vertical-align: middle;
-}
-.skeleton .poster {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-}
-.skeleton .sub {
-  display: block;
 }
 </style>

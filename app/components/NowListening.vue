@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { Track } from '#shared/types'
 
 const emit = defineEmits<{ unavailable: [] }>()
@@ -32,7 +33,7 @@ const rows = computed(() => tracks.value.map((t) => {
 
 const latest = computed(() => rows.value[0])
 
-const eq = ref<HTMLElement | null>(null)
+const eq = ref<ComponentPublicInstance | null>(null)
 const run = ref(0)
 const running = ref(false)
 let barsDone = 0
@@ -52,7 +53,7 @@ function onBarEnd() {
 
 // alternate: a bar rests after every second iteration
 function endRun() {
-  for (const bar of eq.value?.getAnimations({ subtree: true }) ?? []) {
+  for (const bar of (eq.value?.$el as HTMLElement | undefined)?.getAnimations({ subtree: true }) ?? []) {
     const i = bar.effect?.getComputedTiming().currentIteration
     if (i != null) bar.effect?.updateTiming({ iterations: i % 2 ? i + 1 : i + 2 })
   }
@@ -100,14 +101,14 @@ function ago(at: number) {
 <template>
   <div v-if="!unavailable" ref="root" class="col">
     <div class="head">
-      <h3 class="label" :class="{ playing: latest?.nowPlaying }">
-        <span :key="run" ref="eq" class="eq" :class="{ run: running }" aria-hidden="true" @animationend="onBarEnd"><span /><span /><span /><span /></span>{{ latest?.nowPlaying ? 'Listening' : 'Recently played' }}
+      <h3 class="label">
+        <NowListeningEq :key="run" ref="eq" :playing="latest?.nowPlaying" :running="running" @barend="onBarEnd" />{{ latest?.nowPlaying ? 'Listening' : 'Recently played' }}
       </h3>
     </div>
 
     <div v-if="state === 'loading'" class="skeleton" aria-hidden="true">
       <div class="latest">
-        <span class="cover"><span class="art" /></span>
+        <span class="cover"><NowListeningArt large blank :size="148" /></span>
         <span class="words">
           <span class="bar" style="width: 62%; height: 14px" />
           <span class="bar" style="width: 38%" />
@@ -115,7 +116,7 @@ function ago(at: number) {
       </div>
       <ul class="rows">
         <li v-for="(widths, i) in SKELETON" :key="i" class="row">
-          <span class="art" />
+          <NowListeningArt blank :size="36" />
           <span class="text">
             <span class="title"><span class="bar" :style="{ width: widths[0] }" /></span>
             <span class="sub"><span class="bar" :style="{ width: widths[1] }" /></span>
@@ -129,20 +130,14 @@ function ago(at: number) {
       <a v-if="latest" class="latest" :href="latest.url" rel="noopener">
         <span class="cover">
           <img v-if="latest.cover && loadedArt.has(latest.cover)" class="glow" :src="latest.cover" alt="" aria-hidden="true">
-          <span class="art">
-            <span class="i-site-music" aria-hidden="true" />
-            <img
-              v-if="latest.cover"
-              :src="latest.cover"
-              :class="{ loaded: loadedArt.has(latest.cover) }"
-              alt=""
-              width="148"
-              height="148"
-              decoding="async"
-              @load="loadedArt.add(latest.cover!)"
-              @error="brokenArt.add(latest.cover!)"
-            >
-          </span>
+          <NowListeningArt
+            large
+            :size="148"
+            :src="latest.cover"
+            :loaded="!!latest.cover && loadedArt.has(latest.cover)"
+            @load="loadedArt.add(latest.cover!)"
+            @error="brokenArt.add(latest.cover!)"
+          />
         </span>
         <span class="words">
           <span class="title" dir="auto">{{ latest.title }}</span>
@@ -154,24 +149,17 @@ function ago(at: number) {
 
       <TransitionGroup tag="ul" name="track" class="rows" role="list" @before-leave="pinLeaving">
         <li v-for="r in rows.slice(1)" :key="r.key">
-          <a class="row" :href="r.url" rel="noopener">
-            <span class="art">
-              <span class="i-site-music" aria-hidden="true" />
-              <img
-                v-if="r.art"
-                :src="r.art"
-                :srcset="r.artSet"
-                sizes="36px"
-                :class="{ loaded: loadedArt.has(r.art) }"
-                alt=""
-                width="36"
-                height="36"
-                loading="lazy"
-                decoding="async"
-                @load="loadedArt.add(r.art!)"
-                @error="brokenArt.add(r.art!)"
-              >
-            </span>
+          <a class="row link" :href="r.url" rel="noopener">
+            <NowListeningArt
+              :size="36"
+              :src="r.art"
+              :srcset="r.artSet"
+              sizes="36px"
+              lazy
+              :loaded="!!r.art && loadedArt.has(r.art)"
+              @load="loadedArt.add(r.art!)"
+              @error="brokenArt.add(r.art!)"
+            />
             <span class="text">
               <span class="title" dir="auto">{{ r.title }}</span>
               <span class="sub"><span class="sr-only">by </span><span dir="auto">{{ r.artist }}</span></span>
@@ -188,12 +176,14 @@ function ago(at: number) {
 .col {
   min-width: 0;
 }
+
 .head {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: var(--s2);
 }
+
 .label {
   display: flex;
   align-items: center;
@@ -203,49 +193,6 @@ function ago(at: number) {
   font-weight: 500;
   line-height: 1.4;
   color: var(--ink-3);
-}
-.eq {
-  display: inline-flex;
-  flex: none;
-  align-items: flex-end;
-  gap: 2px;
-  width: 18px;
-  height: 12px;
-  padding: 0 2px;
-  color: var(--ink-3);
-  transition: color 160ms ease;
-}
-.eq span {
-  --rest: 0.55;
-  --swing: 0.95;
-  width: 2px;
-  height: 100%;
-  border-radius: 1px;
-  background: currentColor;
-  transform-origin: 50% 100%;
-  transform: scaleY(var(--rest));
-}
-.eq span:nth-child(2) { --rest: 1; --swing: 0.35; }
-.eq span:nth-child(3) { --rest: 0.75; --swing: 0.3; }
-.eq span:nth-child(4) { --rest: 0.4; --swing: 0.9; }
-.playing .eq {
-  color: var(--ink);
-}
-.eq.run span {
-  animation: eq 0.9s ease-in-out 4 alternate;
-}
-.eq.run span:nth-child(2) {
-  animation-duration: 1.15s;
-}
-.eq.run span:nth-child(3) {
-  animation-duration: 0.8s;
-}
-.eq.run span:nth-child(4) {
-  animation-duration: 1.05s;
-}
-@keyframes eq {
-  from { transform: scaleY(var(--rest)); }
-  to { transform: scaleY(var(--swing)); }
 }
 
 /* the newest track, large, lit from behind by its own cover */
@@ -257,13 +204,23 @@ function ago(at: number) {
   color: inherit;
   text-decoration: none;
 }
-a.latest:focus-visible {
+
+.latest:focus-visible {
   border-radius: var(--r2);
 }
+
+@media (max-width: 640px) {
+  .latest {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: var(--s4);
+  }
+}
+
 .cover {
   position: relative;
   isolation: isolate;
 }
+
 .glow {
   position: absolute;
   inset: -6px;
@@ -276,24 +233,15 @@ a.latest:focus-visible {
   opacity: 0.5;
   pointer-events: none;
 }
+
 .words {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
-.words .title {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  white-space: normal;
-}
-.words .sub {
-  font-size: 16px;
-}
-.words .meta {
-  margin-top: var(--s2);
+
+.skeleton .words {
+  gap: 10px;
 }
 
 .rows {
@@ -304,6 +252,7 @@ a.latest:focus-visible {
   border-top: 1px solid var(--line);
   list-style: none;
 }
+
 .row {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;
@@ -315,58 +264,28 @@ a.latest:focus-visible {
   text-decoration: none;
   transition: opacity 180ms ease;
 }
+
 @media (hover: hover) and (pointer: fine) {
-  .rows:hover a.row:not(:hover) {
+  .rows:hover .link:not(:hover) {
     opacity: 0.45;
   }
 }
-a.row:focus-visible {
+
+.row:focus-visible {
   border-radius: var(--r1);
 }
 
-.art {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  overflow: hidden;
-  border-radius: 5px;
-  background: var(--surface);
-  font-size: 18px;
-  color: var(--ink-3);
-}
-.cover .art {
-  width: 148px;
-  height: 148px;
-  border-radius: 10px;
-  font-size: 40px;
-}
-.art::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--line);
-  pointer-events: none;
-}
-.art img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 200ms var(--ease-out);
-}
-.art img.loaded {
-  opacity: 1;
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    transition: none;
+  }
 }
 
 .text {
   display: grid;
   min-width: 0;
 }
+
 .title {
   min-width: 0;
   overflow: hidden;
@@ -377,6 +296,16 @@ a.row:focus-visible {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.words .title {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  white-space: normal;
+}
+
 .sub {
   overflow: hidden;
   font-size: 14px;
@@ -386,6 +315,14 @@ a.row:focus-visible {
   text-overflow: ellipsis;
 }
 
+.words .sub {
+  font-size: 16px;
+}
+
+.words .meta {
+  margin-top: var(--s2);
+}
+
 .bar {
   display: inline-block;
   height: 10px;
@@ -393,54 +330,41 @@ a.row:focus-visible {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
   vertical-align: middle;
 }
-.skeleton .art {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-}
-.skeleton .words {
-  gap: 10px;
-}
 
 .track-move {
   transition: transform 250ms var(--ease-in-out);
 }
-.track-enter-active {
-  transition: transform 250ms var(--ease-out), opacity 200ms var(--ease-out);
+
+@media (prefers-reduced-motion: reduce) {
+  .track-move {
+    transition: none;
+  }
 }
+
+.track-enter-active {
+  transition:
+    transform 250ms var(--ease-out),
+    opacity 200ms var(--ease-out);
+}
+
 .track-enter-from {
   opacity: 0;
   transform: translateY(-8px);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .track-enter-from {
+    transform: none;
+  }
+}
+
 .track-leave-active {
   position: absolute;
   inset-inline: 0;
   transition: opacity 160ms var(--ease-out);
 }
+
 .track-leave-to {
   opacity: 0;
-}
-
-@media (max-width: 640px) {
-  .latest {
-    grid-template-columns: 112px minmax(0, 1fr);
-    gap: var(--s4);
-  }
-  .cover .art {
-    width: 112px;
-    height: 112px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .row {
-    transition: none;
-  }
-  .eq.run span {
-    animation: none;
-  }
-  .track-move {
-    transition: none;
-  }
-  .track-enter-from {
-    transform: none;
-  }
 }
 </style>
