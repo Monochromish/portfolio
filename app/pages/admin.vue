@@ -115,16 +115,16 @@ onMounted(load)
     <div class="wrap">
       <StickerDefs />
       <div class="top">
-        <h1>Sticker moderation</h1>
-        <button v-if="view === 'ready'" type="button" class="quiet-button" :aria-disabled="signingOut ? 'true' : undefined" @click="signOut">
-          <span class="i-site-log-out" aria-hidden="true" />
+        <h1 class="title">Sticker moderation</h1>
+        <button v-if="view === 'ready'" type="button" class="act soft quiet" :aria-disabled="signingOut ? 'true' : undefined" @click="signOut">
+          <span class="i-site-log-out glyph" aria-hidden="true" />
           Sign out
         </button>
       </div>
       <p v-if="signOutError" class="note" role="alert">{{ signOutError }}</p>
 
-      <a v-if="view === 'signed-out'" class="primary" href="/auth/github">
-        <span class="i-site-github" aria-hidden="true" />
+      <a v-if="view === 'signed-out'" class="act solid primary" href="/auth/github">
+        <span class="i-site-github glyph" aria-hidden="true" />
         Sign in with GitHub
       </a>
       <p v-else-if="view === 'not-configured'" class="note">
@@ -136,7 +136,7 @@ onMounted(load)
 
       <template v-else-if="view === 'ready'">
         <section class="group" aria-labelledby="queue-title">
-          <h2 id="queue-title">
+          <h2 id="queue-title" class="heading">
             Waiting for review
             <span class="meta">{{ pending.length }}{{ next === null ? '' : '+' }}</span>
           </h2>
@@ -147,12 +147,12 @@ onMounted(load)
                 #{{ sticker.id }} · <time :datetime="new Date(sticker.createdAt).toISOString()">{{ when.format(sticker.createdAt) }}</time>
               </p>
               <div class="actions">
-                <button type="button" class="approve" :aria-disabled="busy[sticker.id] ? 'true' : undefined" @click="decide(sticker, 'approve')">
-                  <span class="i-site-check" aria-hidden="true" />
+                <button type="button" class="act solid approve" :aria-disabled="busy[sticker.id] ? 'true' : undefined" @click="decide(sticker, 'approve')">
+                  <span class="i-site-check glyph" aria-hidden="true" />
                   {{ busy[sticker.id] === 'approve' ? 'Approving' : 'Approve' }}
                 </button>
-                <button type="button" class="reject" :aria-disabled="busy[sticker.id] ? 'true' : undefined" @click="decide(sticker, 'reject')">
-                  <span class="i-site-close" aria-hidden="true" />
+                <button type="button" class="act soft reject" :aria-disabled="busy[sticker.id] ? 'true' : undefined" @click="decide(sticker, 'reject')">
+                  <span class="i-site-close glyph" aria-hidden="true" />
                   {{ busy[sticker.id] === 'reject' ? 'Rejecting' : 'Reject' }}
                 </button>
               </div>
@@ -161,7 +161,7 @@ onMounted(load)
           </StickerBook>
           <p v-else-if="next === null" class="note">Nothing waiting. Every sticker has been looked at.</p>
           <p v-if="next !== null" class="more">
-            <button type="button" class="quiet-button" :aria-disabled="loadingMore ? 'true' : undefined" @click="loadMore">
+            <button type="button" class="act soft quiet" :aria-disabled="loadingMore ? 'true' : undefined" @click="loadMore">
               {{ loadingMore ? 'Loading' : 'Show more' }}
             </button>
             <span v-if="moreError" class="note" role="alert">That did not load. Try again.</span>
@@ -169,16 +169,16 @@ onMounted(load)
         </section>
 
         <section v-if="recent.length" class="group" aria-labelledby="recent-title">
-          <h2 id="recent-title">Recent decisions</h2>
+          <h2 id="recent-title" class="heading">Recent decisions</h2>
           <StickerBook class="queue" :stickers="recent">
             <template #default="{ sticker }">
               <p class="meta when decision">
-                <span :class="sticker.status === 'approved' ? 'i-site-check' : 'i-site-close'" aria-hidden="true" />
+                <span class="verdict" :class="sticker.status === 'approved' ? 'i-site-check' : 'i-site-close'" aria-hidden="true" />
                 {{ sticker.status === 'approved' ? 'Approved' : 'Rejected' }} · #{{ sticker.id }}
               </p>
               <button
                 type="button"
-                class="flip"
+                class="act soft flip"
                 :aria-disabled="busy[sticker.id] ? 'true' : undefined"
                 @click="decide(sticker, sticker.status === 'approved' ? 'reject' : 'approve')"
               >
@@ -197,11 +197,25 @@ onMounted(load)
 .shell {
   padding: 48px 0 128px;
 }
+
+@media (max-width: 640px) {
+  .shell {
+    padding-bottom: 96px;
+  }
+}
+
 .wrap {
   max-width: 67.5rem;
   margin: 0 auto;
   padding: 104px max(var(--s5), env(safe-area-inset-right)) 0 max(var(--s5), env(safe-area-inset-left));
 }
+
+@media (max-width: 640px) {
+  .wrap {
+    padding: 72px 20px 0;
+  }
+}
+
 .top {
   display: flex;
   align-items: center;
@@ -209,7 +223,8 @@ onMounted(load)
   gap: 16px;
   margin-bottom: 28px;
 }
-h1 {
+
+.title {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--t-title);
@@ -217,7 +232,14 @@ h1 {
   line-height: 1.14;
   letter-spacing: -0.022em;
 }
-h2 {
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 24px;
+  }
+}
+
+.heading {
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -228,6 +250,7 @@ h2 {
   line-height: 1.3;
   letter-spacing: -0.01em;
 }
+
 .more {
   display: flex;
   flex-wrap: wrap;
@@ -235,18 +258,22 @@ h2 {
   gap: 8px 14px;
   margin: 20px 0 0;
 }
+
 .group + .group {
   margin-top: 64px;
 }
+
 .note {
   margin: 0;
   color: var(--ink-2);
 }
+
 .lead {
   margin-bottom: 18px;
   font-size: 15px;
   color: var(--ink-3);
 }
+
 /* the same page the public board uses */
 .wrap .queue {
   gap: 28px 24px;
@@ -257,15 +284,18 @@ h2 {
   background-size: 26px 26px;
   box-shadow: var(--edge);
 }
+
 .when {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin: 10px 0 0;
 }
-.decision span {
+
+.verdict {
   font-size: 16px;
 }
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -273,11 +303,8 @@ h2 {
   gap: 8px;
   margin-top: 8px;
 }
-.approve,
-.reject,
-.primary,
-.quiet-button,
-.flip {
+
+.act {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -287,76 +314,78 @@ h2 {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease, box-shadow 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    border-radius 200ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
-.approve,
-.primary {
-  padding: 0 16px 0 13px;
+
+@media (hover: hover) and (pointer: fine) {
+  .act:hover {
+    border-radius: var(--r3);
+  }
+}
+
+.act:active {
+  transform: scale(0.97);
+}
+
+.act[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.solid {
   background: var(--ink);
   box-shadow: var(--edge-ink);
   color: var(--paper);
 }
-.primary {
-  padding: 0 20px 0 16px;
+
+@media (hover: hover) and (pointer: fine) {
+  .solid:hover {
+    background: var(--ink-2);
+  }
 }
-.reject,
-.flip,
-.quiet-button {
+
+.soft {
+  --limn-edge: var(--edge);
   background: var(--fill);
-  box-shadow: var(--edge);
+  box-shadow: var(--limn-edge);
   color: var(--ink);
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .soft:hover {
+    --limn-edge: var(--edge-lift);
+    background: var(--fill-hover);
+  }
+}
+
+.approve,
 .reject {
   padding: 0 16px 0 13px;
 }
-.quiet-button {
+
+.primary {
+  padding: 0 20px 0 16px;
+}
+
+.quiet {
   padding: 0 14px;
 }
+
 .flip {
   margin-top: 8px;
   padding: 0 16px;
 }
-.approve span,
-.reject span,
-.primary span,
-.quiet-button span {
+
+.glyph {
   font-size: 18px;
 }
-:is(.approve, .reject, .primary, .quiet-button, .flip):active {
-  transform: scale(0.97);
-}
-[aria-disabled='true'] {
-  cursor: progress;
-  opacity: 0.6;
-}
-@media (hover: hover) and (pointer: fine) {
-  :is(.approve, .reject, .primary, .quiet-button, .flip):hover {
-    border-radius: var(--r3);
-  }
-  .approve:hover,
-  .primary:hover {
-    background: var(--ink-2);
-  }
-  .reject:hover,
-  .flip:hover,
-  .quiet-button:hover {
-    background: var(--fill-hover);
-    box-shadow: var(--edge-lift);
-  }
-}
+
 .row-error {
   margin: 6px 0 0;
   color: var(--ink);
-}
-@media (max-width: 640px) {
-  .shell {
-    padding-bottom: 96px;
-  }
-  .wrap {
-    padding: 72px 20px 0;
-  }
-  h1 {
-    font-size: 24px;
-  }
 }
 </style>

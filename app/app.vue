@@ -96,6 +96,7 @@ useToolbarTint()
   color: var(--paper);
   text-decoration: none;
 }
+
 .skip:focus-visible {
   top: 12px;
 }

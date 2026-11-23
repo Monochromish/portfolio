@@ -74,7 +74,7 @@ function home(e: MouseEvent) {
         <h1 class="page-title title">{{ title }}</h1>
         <p v-if="missing" class="lead poem">
           <span class="sr-only">Error {{ status }}. </span>
-          <span v-for="line in POEM" :key="line">{{ line }}</span>
+          <span v-for="line in POEM" :key="line" class="line">{{ line }}</span>
         </p>
         <p v-else class="lead">
           <span class="sr-only">Error {{ status }}. </span>This page did not load. Try again in a moment.
@@ -105,25 +105,31 @@ function home(e: MouseEvent) {
   color: var(--ink);
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 150ms ease, transform 160ms var(--ease-out);
+  transition:
+    background-color 150ms ease,
+    transform 160ms var(--ease-out);
 }
-.arrow {
-  font-size: 18px;
-  color: var(--ink-3);
-}
+
 @media (hover: hover) and (pointer: fine) {
   .back:hover {
     background: color-mix(in srgb, var(--ink) 7%, transparent);
   }
 }
+
 .back:active {
   background: color-mix(in srgb, var(--ink) 11%, transparent);
   transform: scale(0.97);
 }
+
 @media (pointer: coarse) {
   .back {
     min-height: 44px;
   }
+}
+
+.arrow {
+  font-size: 18px;
+  color: var(--ink-3);
 }
 
 .lost {
@@ -135,6 +141,7 @@ function home(e: MouseEvent) {
   overflow-x: clip;
   line-height: 1.65;
 }
+
 /* the wall fills the screen above the footer, with the words in its middle; 76 px clears the fixed header */
 .scene {
   display: grid;
@@ -142,9 +149,11 @@ function home(e: MouseEvent) {
   place-items: center;
   padding: calc(76px + var(--s7)) var(--gutter-r) var(--s8) var(--gutter-l);
 }
+
 .words {
   width: min(100%, 40rem);
 }
+
 /* pulled left so the first stroke meets the text edge */
 .code {
   margin: 0 0 0 -0.04em;
@@ -156,18 +165,22 @@ function home(e: MouseEvent) {
   letter-spacing: -0.03em;
   color: var(--ink);
 }
+
 .title {
   margin-top: var(--s5);
 }
+
 .lead {
   margin: var(--s3) 0 0;
 }
+
 /* a long line wraps with a hanging indent, so it still reads as one line */
-.poem > span:not(.sr-only) {
+.line {
   display: block;
   padding-left: 1em;
   text-indent: -1em;
 }
+
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -177,6 +190,7 @@ function home(e: MouseEvent) {
   padding: 0;
   list-style: none;
 }
+
 .end {
   box-sizing: border-box;
   width: 100%;

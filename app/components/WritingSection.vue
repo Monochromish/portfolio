@@ -31,11 +31,13 @@ const shown = computed(() => props.page ? all : all.slice(0, HOME_LIMIT))
   max-width: 31rem;
   margin: var(--s3) 0 var(--s6);
 }
+
 .rows {
   margin: 0;
   padding: 0;
   list-style: none;
 }
+
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -47,30 +49,36 @@ const shown = computed(() => props.page ? all : all.slice(0, HOME_LIMIT))
   text-decoration: none;
   transition: background-color 150ms ease;
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--fill);
+  }
+}
+
+.row:focus-visible {
+  outline-offset: 0;
+  border-radius: var(--r2);
+}
+
+.row:active {
+  background: var(--fill-hover);
+}
+
 .title {
   font-weight: 600;
   line-height: 1.4;
   color: var(--ink);
   text-wrap: pretty;
 }
+
 .when {
   font-size: var(--t-small);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--ink-3);
 }
-.row:focus-visible {
-  outline-offset: 0;
-  border-radius: var(--r2);
-}
-@media (hover: hover) and (pointer: fine) {
-  .row:hover {
-    background: var(--fill);
-  }
-}
-.row:active {
-  background: var(--fill-hover);
-}
+
 .all {
   margin: var(--s3) 0 0;
 }

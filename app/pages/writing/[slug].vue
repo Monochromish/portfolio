@@ -51,9 +51,11 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
 .head {
   margin-bottom: var(--s7);
 }
+
 .head .meta {
   margin: var(--s3) 0 0;
 }
+
 .summary {
   max-width: 31rem;
   margin: var(--s4) 0 0;
@@ -66,9 +68,11 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
   line-height: 1.7;
   color: var(--ink-2);
 }
+
 .prose :deep(:is(p, ul, ol, blockquote, pre, figure, table)) {
   margin: 0 0 1.15em;
 }
+
 .prose :deep(h2) {
   margin: 2.2em 0 0.55em;
   font-size: 19px;
@@ -76,70 +80,85 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
   line-height: 1.35;
   letter-spacing: -0.01em;
 }
+
 .prose :deep(h3) {
   margin: 1.9em 0 0.45em;
   font-size: 17px;
   font-weight: 650;
   line-height: 1.45;
 }
+
 .prose :deep(:is(h2, h3)) {
   color: var(--ink);
   /* clears the fixed header */
   scroll-margin-top: 96px;
 }
+
 .prose :deep(:is(h2, h3):first-child) {
   margin-top: 0;
 }
+
 .prose :deep(a) {
   color: var(--ink);
   text-decoration-line: underline;
   text-decoration-color: color-mix(in srgb, var(--ink) 30%, transparent);
   transition: text-decoration-color 150ms;
 }
+
 @media (hover: hover) and (pointer: fine) {
   .prose :deep(a:hover) {
     text-decoration-color: var(--ink);
   }
 }
+
 .prose :deep(strong) {
   font-weight: 650;
   color: var(--ink);
 }
+
 .prose :deep(ul) {
   padding-left: 1.25em;
   list-style: disc;
 }
+
 .prose :deep(ol) {
   padding-left: 1.4em;
   list-style: decimal;
 }
+
 .prose :deep(li) {
   margin: 0.35em 0;
   padding-left: 0.2em;
 }
+
 .prose :deep(li::marker) {
   color: var(--ink-3);
 }
+
 .prose :deep(blockquote) {
   padding-left: 1em;
   border-left: 2px solid var(--line-strong);
   color: var(--ink-3);
 }
+
 .prose :deep(hr) {
   margin: 2.4em 0;
   border: 0;
   border-top: 1px solid var(--line);
 }
+
 .prose :deep(code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.86em;
 }
+
 .prose :deep(:not(pre) > code) {
   padding: 0.12em 0.36em;
   border-radius: 6px;
   background: color-mix(in srgb, var(--ink) 6%, transparent);
   color: var(--ink);
 }
+
 .prose :deep(pre) {
   padding: 16px 18px;
   overflow-x: auto;
@@ -151,15 +170,19 @@ useHead({ link: [{ rel: 'canonical', href: url }] })
   line-height: 1.6;
   tab-size: 2;
 }
+
 .prose :deep(pre code) {
   font-size: inherit;
 }
+
 .prose :deep(:is(img, video)) {
   border-radius: var(--r2);
 }
+
 .prose :deep(figure) {
   margin: 2em 0;
 }
+
 .prose :deep(figcaption) {
   margin-top: 10px;
   font-size: 14px;

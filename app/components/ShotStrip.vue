@@ -42,6 +42,7 @@ watch(() => props.eager, async (eager) => {
   if (!eager) return
   await nextTick()
   for (const img of strip.value?.querySelectorAll('img') ?? []) {
+    // decode() rejects when the file fails to load, which the img element already shows by itself
     if (img.loading === 'eager') img.decode().catch(() => {})
   }
 })
@@ -56,6 +57,7 @@ onMounted(measure)
         <img
           v-for="pic in pictures(shot)"
           :key="pic.file"
+          class="shot"
           :class="pic.only && `only-${pic.only}`"
           :src="src(pic.file, shot.widths[0]!)"
           :srcset="srcset(pic.file, shot.widths)"
@@ -69,10 +71,10 @@ onMounted(measure)
       </li>
     </ul>
     <div v-if="props.shots.length > 1" class="steps">
-      <button type="button" aria-label="Previous screenshot" :aria-disabled="atStart ? 'true' : undefined" @click="step(-1)">
+      <button type="button" class="step" aria-label="Previous screenshot" :aria-disabled="atStart ? 'true' : undefined" @click="step(-1)">
         <span class="i-site-arrow-left" aria-hidden="true" />
       </button>
-      <button type="button" aria-label="Next screenshot" :aria-disabled="atEnd ? 'true' : undefined" @click="step(1)">
+      <button type="button" class="step" aria-label="Next screenshot" :aria-disabled="atEnd ? 'true' : undefined" @click="step(1)">
         <span class="i-site-arrow-left next" aria-hidden="true" />
       </button>
     </div>
@@ -92,19 +94,23 @@ onMounted(measure)
   overscroll-behavior-x: contain;
   border-radius: var(--r2);
 }
+
 .strip::-webkit-scrollbar {
   display: none;
 }
+
 /* one height for every screenshot; a 16:9 one comes to 86% of the column, so the next shows its edge */
 .slide {
   flex: none;
   height: clamp(180px, 46vw, 288px);
   scroll-snap-align: start;
 }
+
 .tall .slide {
   height: clamp(300px, 70vw, 460px);
 }
-.slide img {
+
+.shot {
   display: block;
   width: auto;
   max-width: none;
@@ -113,21 +119,24 @@ onMounted(measure)
   outline: 1px solid var(--line);
   outline-offset: -1px;
 }
-/* has to out-specify `.slide img`, or both versions show */
-.slide .only-dark,
-:root.dark .slide .only-light {
+
+.shot.only-dark,
+:root.dark .shot.only-light {
   display: none;
 }
-:root.dark .slide .only-dark {
+
+:root.dark .shot.only-dark {
   display: block;
 }
+
 .steps {
   display: flex;
   justify-content: flex-end;
   gap: var(--s1);
   margin-top: var(--s2);
 }
-.steps button {
+
+.step {
   display: grid;
   place-items: center;
   width: 44px;
@@ -136,24 +145,32 @@ onMounted(measure)
   font-size: 18px;
   color: var(--ink);
   cursor: pointer;
-  transition: background-color 150ms ease, opacity 150ms ease, transform 160ms var(--ease-out);
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease,
+    transform 160ms var(--ease-out);
 }
-.steps button:active {
+
+@media (hover: hover) and (pointer: fine) {
+  .step:not([aria-disabled='true']):hover {
+    background: var(--fill);
+  }
+}
+
+.step:active {
   transform: scale(0.97);
 }
-.steps button[aria-disabled='true'] {
+
+.step[aria-disabled='true'] {
   opacity: 0.35;
   cursor: default;
 }
-.steps button[aria-disabled='true']:active {
+
+.step[aria-disabled='true']:active {
   transform: none;
 }
+
 .next {
   rotate: 180deg;
-}
-@media (hover: hover) and (pointer: fine) {
-  .steps button:not([aria-disabled='true']):hover {
-    background: var(--fill);
-  }
 }
 </style>
