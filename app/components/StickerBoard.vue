@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="wrap" class="board-wrap">
+  <div ref="wrap" class="sticker-board">
     <div
       ref="board"
       class="board"
@@ -261,38 +261,17 @@ onBeforeUnmount(() => {
         {{ note }}
       </p>
     </div>
-    <div v-if="draft" class="placing-bar">
-      <p class="hint">
-        Drag your sticker anywhere on the board.
-      </p>
-      <div class="choices">
-        <label class="share">
-          <input v-model="shareCountry" type="checkbox">
-          Share my country
-        </label>
-        <div class="buttons">
-          <button type="button" class="cancel" @click="emit('cancel')">
-            Cancel
-          </button>
-          <button type="button" class="stick" :aria-disabled="posting ? 'true' : undefined" @click="stick">
-            {{ posting ? 'Sticking' : 'Stick it here' }}
-            <span class="i-site-send" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-      <p v-if="problem" class="problem" role="alert">
-        {{ problem }}
-      </p>
-    </div>
+    <StickerBoardPlacing v-if="draft" v-model:share="shareCountry" :posting="posting" :problem="problem" @cancel="emit('cancel')" @stick="stick" />
   </div>
 </template>
 
 <style scoped>
 /* breaks out of the 592 px column to at most 880 px, keeping 16 px from the screen's edges */
-.board-wrap {
+.sticker-board {
   margin: 28px calc(50% - min(440px, 50vw - 16px)) 0;
   scroll-margin: 96px 0 16px;
 }
+
 .board {
   position: relative;
   aspect-ratio: 3 / 2;
@@ -304,14 +283,22 @@ onBeforeUnmount(() => {
   background-position: 9px 9px;
   outline-offset: 4px;
 }
+
 .placing {
   touch-action: none;
   cursor: grab;
 }
+
 .dragging {
   cursor: grabbing;
 }
+
 .spot {
+  --land:
+    opacity 150ms var(--ease-out),
+    scale 200ms var(--ease-out),
+    filter 200ms var(--ease-out),
+    rotate 200ms var(--ease-out);
   position: absolute;
   display: block;
   width: 20%;
@@ -323,43 +310,72 @@ onBeforeUnmount(() => {
   cursor: default;
   transition: scale 150ms var(--ease-out);
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .board:not(.placing) .spot:hover {
+    scale: 1.04;
+  }
+}
+
 .spot:focus-visible,
 .tipped {
   z-index: 1;
 }
+
 .placing .spot:not(.ghost) {
   pointer-events: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .spot {
+    transition: opacity 150ms ease;
+  }
+}
+
 .ghost {
   z-index: 2;
   scale: 1.06;
-  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.2));
+  filter: drop-shadow(0 10px 14px oklch(0% 0 0 / 0.2));
+  transition: var(--land);
 }
+
 @starting-style {
   .ghost {
     opacity: 0;
     scale: 1;
   }
 }
-.ghost,
-.placed {
-  transition: opacity 150ms var(--ease-out), scale 200ms var(--ease-out), filter 200ms var(--ease-out), rotate 200ms var(--ease-out);
-}
+
 /* the lean is set every frame while carried; a transition on top would trail the hand */
 .dragging .ghost {
   transition-property: opacity, scale, filter;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost {
+    scale: 1;
+    transition: opacity 150ms ease;
+  }
+}
+
+.placed {
+  transition: var(--land);
+}
+
 @starting-style {
   .placed {
     scale: 1.06;
-    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.2));
+    filter: drop-shadow(0 10px 14px oklch(0% 0 0 / 0.2));
   }
 }
-@media (hover: hover) and (pointer: fine) {
-  .board:not(.placing) .spot:hover {
-    scale: 1.04;
+
+@media (prefers-reduced-motion: reduce) {
+  .placed {
+    scale: 1;
+    transition: opacity 150ms ease;
   }
 }
+
 .tip {
   position: absolute;
   z-index: 3;
@@ -376,15 +392,24 @@ onBeforeUnmount(() => {
   pointer-events: none;
   animation: tip-in 120ms var(--ease-out);
 }
-.tip .place {
-  font-weight: 450;
-  opacity: 0.78;
-}
+
 @keyframes tip-in {
   from {
     opacity: 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .tip {
+    animation: none;
+  }
+}
+
+.place {
+  font-weight: 450;
+  opacity: 0.78;
+}
+
 .note {
   position: absolute;
   inset: 0;
@@ -392,118 +417,5 @@ onBeforeUnmount(() => {
   place-items: center;
   margin: 0;
   color: var(--ink-2);
-}
-.placing-bar {
-  margin-top: 14px;
-  padding-inline: 8px;
-}
-.hint {
-  margin: 0;
-  font-size: 14px;
-  text-align: center;
-  color: var(--ink-2);
-}
-.choices {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 20px;
-  margin-top: 10px;
-}
-.share {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 44px;
-  font-size: 15px;
-  font-weight: 550;
-  color: var(--ink);
-  cursor: pointer;
-}
-.share input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--ink);
-  cursor: pointer;
-}
-.buttons {
-  display: flex;
-  gap: 8px;
-}
-.cancel,
-.stick {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  border-radius: var(--r2);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 150ms ease, box-shadow 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
-}
-.cancel {
-  padding: 0 16px;
-  background: var(--fill);
-  box-shadow: var(--edge);
-  color: var(--ink);
-}
-.stick {
-  padding: 0 18px 0 20px;
-  background: var(--ink);
-  box-shadow: var(--edge-ink);
-  color: var(--paper);
-}
-.stick span {
-  font-size: 18px;
-}
-.cancel:active,
-.stick:active {
-  transform: scale(0.97);
-}
-.cancel:active {
-  box-shadow: var(--edge-down);
-}
-.stick[aria-disabled='true'] {
-  cursor: progress;
-  background: color-mix(in srgb, var(--ink) 70%, var(--paper));
-}
-@media (hover: hover) and (pointer: fine) {
-  .cancel:hover {
-    border-radius: var(--r3);
-    background: var(--fill-hover);
-    box-shadow: var(--edge-lift);
-  }
-  .cancel:hover:active {
-    box-shadow: var(--edge-down);
-  }
-  .stick:not([aria-disabled='true']):hover {
-    border-radius: var(--r3);
-    background: var(--ink-2);
-  }
-}
-.problem {
-  margin: 10px 0 0;
-  font-size: 14px;
-  font-weight: 550;
-  line-height: 1.45;
-  text-align: center;
-  color: var(--ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .spot,
-  .ghost,
-  .placed {
-    transition: opacity 150ms ease;
-  }
-  .ghost,
-  .placed {
-    scale: 1;
-  }
-  .tip {
-    animation: none;
-  }
 }
 </style>

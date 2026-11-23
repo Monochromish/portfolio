@@ -48,19 +48,22 @@ const label = (s: Sticker) => `${stickerTemplate(s.template)!.label} sticker, ad
   padding: 0;
   list-style: none;
 }
+
+@media (max-width: 560px) {
+  .sticker-book {
+    --k: 0.5;
+  }
+}
+
 .slot {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .lay {
   width: calc(var(--w) * var(--k) * 1px);
   aspect-ratio: var(--w) / var(--h);
   transform: translateY(var(--lift)) rotate(var(--tilt));
-}
-@media (max-width: 560px) {
-  .sticker-book {
-    --k: 0.5;
-  }
 }
 </style>

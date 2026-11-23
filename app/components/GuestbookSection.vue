@@ -136,11 +136,12 @@ async function loadOlder() {
 
 <template>
   <div v-if="overlay" class="overlay">
-    <GuestbookForm ref="form" :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
+    <GuestbookForm ref="form" centred :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
     <dialog ref="sheet" class="sheet" aria-label="Place your sticker" @cancel.prevent="onCancel">
       <StickerBoard
         v-if="draft"
         ref="board"
+        class="flush"
         :stickers="shown"
         :draft="draft"
         :posting="posting"
@@ -165,6 +166,7 @@ async function loadOlder() {
       <GuestbookForm ref="form" :left="own.left" :placing="!!draft" @sent="onSent" @left="onLeft" @place="onPlace" />
       <StickerBoard
         ref="board"
+        class="listed"
         :stickers="shown"
         :draft="draft"
         :posting="posting"
@@ -189,11 +191,6 @@ async function loadOlder() {
 </template>
 
 <style scoped>
-/* the notice a visitor gets once theirs is in sits centred under the slot it filled */
-.overlay :deep(.notice) {
-  justify-content: center;
-  margin: 0;
-}
 .sheet {
   width: min(55rem, calc(100vw - 2 * var(--s4)));
   max-height: calc(100dvh - 2 * var(--s4));
@@ -201,33 +198,45 @@ async function loadOlder() {
   padding: var(--s4);
   border-radius: var(--r4);
   background: var(--surface);
-  box-shadow: var(--edge), 0 24px 64px -16px rgb(0 0 0 / 0.5);
+  box-shadow:
+    var(--edge),
+    0 24px 64px -16px oklch(0% 0 0 / 0.5);
   color: var(--ink-2);
   opacity: 0;
   scale: 0.97;
-  transition: opacity 180ms ease, scale 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
+  transition:
+    opacity 180ms ease,
+    scale 220ms var(--ease-out),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
 }
+
 .sheet[open] {
   opacity: 1;
   scale: 1;
 }
+
 @starting-style {
   .sheet[open] {
     opacity: 0;
     scale: 0.97;
   }
 }
+
 .sheet::backdrop {
-  background: rgb(0 0 0 / 0.55);
+  background: oklch(0% 0 0 / 0.55);
 }
-.sheet :deep(.board-wrap) {
+
+.sheet .flush {
   margin: 0;
 }
+
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     transition: none;
   }
 }
+
 /* the row is as tall as its button; pulled up so the heading, centred in it, starts where every other section's does */
 .head {
   display: flex;
@@ -238,16 +247,20 @@ async function loadOlder() {
   min-height: 44px;
   margin-top: calc(var(--s3) * -1);
 }
+
 .page .head {
   margin-top: 0;
 }
+
 /* the row centres it */
 .title {
   margin: 0;
 }
-.body :deep(.board-wrap) {
+
+.body .listed {
   margin-top: var(--s3);
 }
+
 .more {
   display: flex;
   flex-wrap: wrap;

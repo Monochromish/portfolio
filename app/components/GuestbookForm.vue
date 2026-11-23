@@ -3,7 +3,7 @@ import { GUESTBOOK_TURNSTILE_ACTION, STICKER_TEMPLATES, stickerProblem, stickerT
 import type { GuestbookReceipt, GuestbookRejection, Placement, Sticker, StickerStroke, StickerSubmission } from '#shared/types'
 import type { StickerDraft } from './StickerBoard.vue'
 
-defineProps<{ left: boolean, placing?: boolean }>()
+defineProps<{ left: boolean, placing?: boolean, centred?: boolean }>()
 const emit = defineEmits<{ sent: [sticker: Sticker], left: [], place: [draft: StickerDraft] }>()
 
 interface Turnstile {
@@ -92,17 +92,8 @@ async function refreshToken() {
 
 function warm() {
   loadChallenge()
+  // post() fetches the token again when this fails, and reports the failure there
   if (!formToken) refreshToken().catch(() => {})
-}
-
-function onRadioKey(e: KeyboardEvent, index: number, count: number, choose: (i: number) => void) {
-  const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
-  const to = e.key === 'Home' ? 0 : e.key === 'End' ? count - 1 : step ? (index + step + count) % count : -1
-  if (to < 0) return
-  e.preventDefault()
-  choose(to)
-  const button = (e.currentTarget as HTMLElement).parentElement?.children[to]
-  if (button instanceof HTMLElement) button.focus()
 }
 
 const setColor = (color: number) => picked.value && update(picked.value, { color })
@@ -234,7 +225,7 @@ async function explain(err: unknown) {
     emit('left')
     return null
   }
-  if (reason === 'form-token' || reason === 'form-expired') await refreshToken().catch(() => {})
+  if (reason === 'form-token' || reason === 'form-expired') formToken = ''
   if (reason) return MESSAGES[reason]
   const status = (err as { statusCode?: number }).statusCode
   return status
@@ -321,13 +312,13 @@ defineExpose({
 
 <template>
   <div class="guestbook-form" :data-input="input" @keydown.capture="input = 'keyboard'" @pointerdown.capture="input = 'pointer'">
-    <p v-if="left" ref="noticeLine" class="notice" role="status" tabindex="-1">
-      <span class="i-site-check" aria-hidden="true" />
+    <p v-if="left" ref="noticeLine" class="notice" :class="{ centred }" role="status" tabindex="-1">
+      <span class="i-site-check check" aria-hidden="true" />
       {{ notice || MESSAGES['one-per-visitor'] }}
     </p>
     <template v-else>
-      <p v-if="notice && !template" ref="noticeLine" class="notice" role="status" tabindex="-1">
-        <span class="i-site-check" aria-hidden="true" />
+      <p v-if="notice && !template" ref="noticeLine" class="notice" :class="{ centred }" role="status" tabindex="-1">
+        <span class="i-site-check check" aria-hidden="true" />
         {{ notice }}
       </p>
 
@@ -358,45 +349,17 @@ defineExpose({
           {{ full ? 'This sticker is full. Undo a few strokes to keep drawing.' : 'Draw with a mouse, finger or pen.' }}
         </p>
 
-        <div class="tools">
-          <div class="inks" role="radiogroup" aria-label="Ink">
-            <button
-              v-for="(ink, i) in template.inks"
-              :key="ink.hex"
-              type="button"
-              role="radio"
-              class="ink"
-              :aria-checked="drawing.color === i"
-              :aria-label="ink.name"
-              :title="ink.name"
-              :tabindex="drawing.color === i ? 0 : -1"
-              @click="setColor(i)"
-              @keydown="onRadioKey($event, i, template.inks.length, setColor)"
-            >
-              <span class="swatch" :style="{ background: ink.hex }" />
-            </button>
-          </div>
-          <div class="sizes" role="radiogroup" aria-label="Brush">
-            <button
-              v-for="(name, i) in ['Fine', 'Bold']"
-              :key="name"
-              type="button"
-              role="radio"
-              class="size"
-              :aria-checked="drawing.size === i"
-              :tabindex="drawing.size === i ? 0 : -1"
-              @click="setSize(i)"
-              @keydown="onRadioKey($event, i, 2, setSize)"
-            >
-              <span class="dot" :class="i ? 'bold' : 'fine'" :style="{ background: template.inks[drawing.color]!.hex }" aria-hidden="true" />
-              {{ name }}
-            </button>
-          </div>
-          <div class="edits">
-            <button type="button" class="quiet" :aria-disabled="drawing.history.length ? undefined : 'true'" @click="undo">Undo</button>
-            <button type="button" class="quiet" :aria-disabled="drawing.strokes.length ? undefined : 'true'" @click="clear">Clear</button>
-          </div>
-        </div>
+        <GuestbookFormTools
+          :inks="template.inks"
+          :color="drawing.color"
+          :size="drawing.size"
+          :can-undo="!!drawing.history.length"
+          :can-clear="!!drawing.strokes.length"
+          @color="setColor"
+          @size="setSize"
+          @undo="undo"
+          @clear="clear"
+        />
 
         <div class="trap" aria-hidden="true">
           <label for="gb-website">Website</label>
@@ -404,14 +367,14 @@ defineExpose({
         </div>
 
         <div class="actions">
-          <button type="button" class="quiet" @click="pad?.close()">
+          <GuestbookFormPill @click="pad?.close()">
             Cancel
-          </button>
+          </GuestbookFormPill>
           <button ref="submit" type="submit" class="submit">
             Put it on the board
           </button>
           <p v-if="formError" ref="errorLine" class="error" role="alert">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.6" /><path d="M10 6.7v3.8M10 13.3h.01" /></svg>
+            <svg class="error-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.6" /><path d="M10 6.7v3.8M10 13.3h.01" /></svg>
             {{ formError }}
           </p>
         </div>
@@ -423,43 +386,33 @@ defineExpose({
 </template>
 
 <style scoped>
-.size::before,
-.quiet::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .size:not([aria-checked='true']):hover::before,
-  .quiet:not([aria-disabled='true']):hover::before {
-    opacity: 1;
-  }
-}
 .notice {
   display: flex;
   align-items: flex-start;
   gap: 7px;
   margin: 18px 0 0;
+  /* keeps it clear of the fixed header */
+  scroll-margin-top: 112px;
   font-size: 15px;
   color: var(--ink);
 }
-.notice span {
+
+/* the notice a visitor gets once theirs is in sits centred under the slot it filled */
+.notice.centred {
+  justify-content: center;
+  margin: 0;
+}
+
+.notice:focus-visible {
+  outline-offset: 4px;
+}
+
+.check {
   flex: none;
   margin-top: 3px;
   font-size: 17px;
 }
-.notice:focus-visible {
-  outline-offset: 4px;
-}
-/* keeps it clear of the fixed header */
-.notice {
-  scroll-margin-top: 112px;
-}
+
 /* 24 px corners and 16 px of padding: the pad inside takes what is left of the corner */
 /* the reset takes a dialog's own centring margin away */
 .pad-dialog {
@@ -469,42 +422,58 @@ defineExpose({
   padding: var(--s4);
   border-radius: var(--r4);
   background: var(--surface);
-  box-shadow: var(--edge), 0 24px 64px -16px rgb(0 0 0 / 0.5);
+  box-shadow:
+    var(--edge),
+    0 24px 64px -16px oklch(0% 0 0 / 0.5);
   color: var(--ink-2);
   /* open() sets the origin to the button that opened it */
   transform-origin: var(--from-x, 50%) var(--from-y, 100%);
   opacity: 0;
   scale: 0.96;
-  transition: opacity 180ms ease, scale 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
+  transition:
+    opacity 180ms ease,
+    scale 220ms var(--ease-out),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
 }
+
 .pad-dialog[open] {
   opacity: 1;
   scale: 1;
 }
+
 @starting-style {
   .pad-dialog[open] {
     opacity: 0;
     scale: 0.96;
   }
 }
+
 .pad-dialog::backdrop {
-  background: rgb(0 0 0 / 0);
-  transition: background-color 220ms ease, overlay 220ms allow-discrete, display 220ms allow-discrete;
+  background: oklch(0% 0 0 / 0);
+  transition:
+    background-color 220ms ease,
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
 }
+
 .pad-dialog[open]::backdrop {
-  background: rgb(0 0 0 / 0.55);
+  background: oklch(0% 0 0 / 0.55);
 }
+
 @starting-style {
   .pad-dialog[open]::backdrop {
-    background: rgb(0 0 0 / 0);
+    background: oklch(0% 0 0 / 0);
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .pad-dialog,
   .pad-dialog::backdrop {
     transition: none;
   }
 }
+
 .pad-title {
   margin: 0;
   font-size: 17px;
@@ -512,105 +481,25 @@ defineExpose({
   line-height: 1.35;
   color: var(--ink);
 }
+
 .pad-note {
   margin: 2px 0 0;
   font-size: var(--t-small);
   line-height: 1.45;
   color: var(--ink-3);
 }
+
 .editor {
   display: flex;
   flex-direction: column;
   margin-top: var(--s3);
 }
+
 .hint {
   margin: 10px 0 0;
   text-align: center;
 }
-.tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 18px;
-  margin-top: 14px;
-}
-.inks,
-.sizes,
-.edits {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.ink {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: transform 160ms var(--ease-out);
-}
-.ink:active {
-  transform: scale(0.95);
-}
-.swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-}
-/* half ink: at least 3:1 on the paper in both themes */
-.swatch,
-.dot {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 50%, transparent);
-}
-.ink[aria-checked='true'] .swatch {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 50%, transparent), 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
-}
-.size,
-.quiet {
-  position: relative;
-  isolation: isolate;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 550;
-  color: var(--ink-2);
-  cursor: pointer;
-  transition: transform 160ms var(--ease-out);
-}
-.size[aria-checked='true'] {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  color: var(--ink);
-}
-.size:active,
-.quiet:active {
-  transform: scale(0.97);
-}
-.quiet[aria-disabled='true'] {
-  color: var(--ink-3);
-  opacity: 0.6;
-  cursor: default;
-}
-.quiet[aria-disabled='true']:active {
-  transform: none;
-}
-.dot {
-  flex: none;
-  border-radius: 999px;
-}
-.dot.fine {
-  width: 6px;
-  height: 6px;
-}
-.dot.bold {
-  width: 12px;
-  height: 12px;
-}
+
 .trap {
   position: absolute;
   left: -10000px;
@@ -618,9 +507,7 @@ defineExpose({
   height: 1px;
   overflow: hidden;
 }
-.challenge :deep(iframe) {
-  margin-top: 18px;
-}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -629,6 +516,7 @@ defineExpose({
   gap: 12px 16px;
   margin-top: 16px;
 }
+
 .submit {
   display: inline-flex;
   align-items: center;
@@ -641,17 +529,23 @@ defineExpose({
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, border-radius 200ms var(--ease-out), transform 160ms var(--ease-out);
+  transition:
+    background-color 150ms ease,
+    border-radius 200ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
-.submit:active {
-  transform: scale(0.97);
-}
+
 @media (hover: hover) and (pointer: fine) {
   .submit:hover {
     border-radius: var(--r3);
     background: var(--ink-2);
   }
 }
+
+.submit:active {
+  transform: scale(0.97);
+}
+
 .error {
   scroll-margin-bottom: 16px;
   display: flex;
@@ -666,10 +560,15 @@ defineExpose({
   color: var(--ink);
   text-align: center;
 }
-.error svg {
+
+.error-icon {
   flex: none;
   width: 18px;
   height: 18px;
   margin-top: 0.5px;
+}
+
+.challenge :deep(iframe) {
+  margin-top: 18px;
 }
 </style>

@@ -373,6 +373,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
 }
+
 /* drawn by the script: the wall's dots, and the ripples that run through them */
 .dots {
   position: absolute;
@@ -383,11 +384,13 @@ onBeforeUnmount(() => {
   mask-image: var(--wall-fade, linear-gradient(#000 55%, transparent));
   pointer-events: none;
 }
+
 .stickers {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
+
 .stuck {
   position: absolute;
   left: 0;
@@ -401,17 +404,74 @@ onBeforeUnmount(() => {
   /* the light's corners are measured in shares of the sticker's own width */
   container-type: inline-size;
 }
+
+.held {
+  cursor: grabbing;
+}
+
 /* put down, it settles a little past flat and comes back, as a pressed sticker does */
 .lay {
+  --settle: 420ms;
+  --tilt: 260ms;
   position: relative;
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.22));
+  filter: drop-shadow(0 2px 3px oklch(0% 0 0 / 0.22));
   transform: perspective(640px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
-  transition: scale 420ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 180ms var(--ease-out), transform 260ms var(--ease-out);
+  transition:
+    scale var(--settle) cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 180ms var(--ease-out),
+    transform var(--tilt) var(--ease-out);
   animation: stick 440ms var(--ease-out) backwards;
   animation-delay: calc(180ms + var(--i) * 60ms);
 }
+
+:root.dark .lay {
+  filter: drop-shadow(0 2px 3px oklch(0% 0 0 / 0.5));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stuck:not(.held):hover .lay {
+    scale: 1.03;
+  }
+}
+
+.held .lay {
+  --settle: 180ms;
+  --tilt: 110ms;
+  scale: 1.08;
+  filter: drop-shadow(0 18px 22px oklch(0% 0 0 / 0.3));
+}
+
+:root.dark .held .lay {
+  filter: drop-shadow(0 18px 22px oklch(0% 0 0 / 0.55));
+}
+
+/* each comes down from just above the wall, lands a touch flat and springs back */
+@keyframes stick {
+  from {
+    opacity: 0;
+    scale: 1.26;
+    translate: 0 -12px;
+  }
+
+  55% {
+    opacity: 1;
+  }
+
+  72% {
+    scale: 0.975;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lay {
+    animation: none;
+    transition: none;
+  }
+}
+
 /* a band of light across the vinyl, which moves as the sticker turns */
 .shine {
   position: absolute;
@@ -420,59 +480,21 @@ onBeforeUnmount(() => {
   right: calc(100% - var(--cx));
   bottom: calc(100% - var(--cy));
   border-radius: 6.9cqw;
-  background: linear-gradient(105deg, transparent 36%, rgb(255 255 255 / 0.34) 50%, transparent 64%) no-repeat;
+  background: linear-gradient(105deg, transparent 36%, oklch(100% 0 0 / 0.34) 50%, transparent 64%) no-repeat;
   background-size: 300% 100%;
   background-position: var(--sh, 50%) 0;
   opacity: 0;
   transition: opacity 220ms ease;
   pointer-events: none;
 }
-.held .shine {
-  opacity: 1;
-}
-.held .lay {
-  transition-duration: 180ms, 180ms, 110ms;
-}
-:root.dark .lay {
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5));
-}
-.held {
-  cursor: grabbing;
-}
-.held .lay {
-  scale: 1.08;
-  filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.3));
-}
-:root.dark .held .lay {
-  filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.55));
-}
-/* each comes down from just above the wall, lands a touch flat and springs back */
-@keyframes stick {
-  from {
-    opacity: 0;
-    scale: 1.26;
-    translate: 0 -12px;
-  }
-  55% {
-    opacity: 1;
-  }
-  72% {
-    scale: 0.975;
-    translate: 0 0;
-  }
-}
+
 @media (hover: hover) and (pointer: fine) {
-  .stuck:not(.held):hover .lay {
-    scale: 1.03;
-  }
   .stuck:hover .shine {
     opacity: 1;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .lay {
-    animation: none;
-    transition: none;
-  }
+
+.held .shine {
+  opacity: 1;
 }
 </style>

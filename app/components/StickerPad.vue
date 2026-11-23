@@ -257,6 +257,7 @@ onBeforeUnmount(() => {
   position: relative;
   margin: 0 auto;
 }
+
 .layer {
   position: absolute;
   inset: 0;
@@ -265,6 +266,7 @@ onBeforeUnmount(() => {
   overflow: visible;
   pointer-events: none;
 }
+
 .surface {
   position: absolute;
   touch-action: none;
@@ -273,13 +275,16 @@ onBeforeUnmount(() => {
   user-select: none;
   -webkit-touch-callout: none;
 }
-.surface:focus {
-  outline: none;
-}
+
 .surface.full {
   cursor: not-allowed;
 }
+
 .surface.locked {
   cursor: progress;
+}
+
+.surface:focus {
+  outline: none;
 }
 </style>
