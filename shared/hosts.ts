@@ -3,6 +3,8 @@ const ALIAS_HOSTS = new Set([
   'www.monochromish.com',
   'monochromi.sh',
   'www.monochromi.sh',
+  'himanshuadwani.com',
+  'www.himanshuadwani.com',
   // previews the alias in development
   'monochromish.localhost',
 ])
