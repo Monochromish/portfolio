@@ -46,7 +46,7 @@ export default defineCachedEventHandler(async (event): Promise<Track[]> => {
         artist: t.artist['#text'],
         album: t.album['#text'],
         url: t.url,
-        art: art && !art.includes(NO_ART) ? art : null,
+        art: art && !art.includes(NO_ART) ? artPath(art) : null,
         playedAt: t.date ? Number(t.date.uts) * 1000 : null,
         nowPlaying: t['@attr']?.nowplaying === 'true',
       }

@@ -12,7 +12,7 @@ export default defineCachedEventHandler(async (event): Promise<Film[]> => {
       headers: { 'user-agent': 'himanshu.sh (+https://himanshu.sh)' },
       signal: AbortSignal.timeout(8000),
     })
-    return parseLetterboxdFeed(xml).slice(0, 8)
+    return parseLetterboxdFeed(xml).slice(0, 8).map(f => ({ ...f, poster: f.poster && artPath(f.poster) }))
   }
   catch (error) {
     failedAt = Date.now()

@@ -74,7 +74,6 @@ const stars = (rating: number) => [1, 2, 3, 4, 5].map(i => rating >= i ? 'full' 
               height="345"
               loading="lazy"
               decoding="async"
-              referrerpolicy="no-referrer"
               @load="loadedPoster.add(f.poster!)"
               @error="brokenPoster.add(f.poster!)"
             >
