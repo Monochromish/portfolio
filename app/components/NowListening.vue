@@ -11,8 +11,11 @@ const now = useNow()
 const SKELETON = [['48%', '30%'], ['72%', '44%'], ['56%', '34%']] as const
 const fullDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 
-// Apple resizes art by path: 174x174bb is 174 px
-const sized = (url: string, px: number) => url.replace(/\/\d+x\d+bb\.(\w+)$/, `/${px}x${px}bb.$1`)
+// Apple and Deezer resize art by path; the Cover Art Archive has 250 and 500 px only
+const sized = (url: string, px: number) => url
+  .replace(/\/\d+x\d+bb\.(\w+)$/, `/${px}x${px}bb.$1`)
+  .replace(/\/\d+x\d+-(\d+-\d+-\d+-\d+\.jpg)$/, `/${px}x${px}-$1`)
+  .replace(/\/front-\d+$/, px > 250 ? '/front-500' : '/front-250')
 const smallArt = (url: string) => sized(url, 174)
 const brokenArt = shallowReactive(new Set<string>())
 const loadedArt = shallowReactive(new Set<string>())

@@ -4,7 +4,7 @@ interface ListenMetadata {
   artist_name: string
   track_name: string
   release_name?: string
-  mbid_mapping?: { recording_mbid?: string }
+  mbid_mapping?: { recording_mbid?: string, caa_release_mbid?: string }
 }
 
 interface Listen {
@@ -20,6 +20,9 @@ interface ListensResponse {
 const DISTINCT = 4
 const BACKOFF_MS = 60_000
 let failedAt = 0
+
+const song = (l: Listen) => `${l.track_metadata.artist_name}\n${l.track_metadata.track_name}`.toLowerCase()
+const sameSong = (a: Listen, b: Listen) => song(a) === song(b)
 
 async function listens(path: string) {
   const res = await fetch(`https://api.listenbrainz.org/1/user/${path}`, { headers: { 'user-agent': 'himanshu.sh (+https://himanshu.sh)' }, signal: AbortSignal.timeout(5000) })
@@ -38,13 +41,13 @@ export default defineCachedEventHandler(async (event): Promise<Track[]> => {
     const [playing, recent] = await Promise.all([listens(`${user}/playing-now`), listens(`${user}/listens?count=100`)])
     // newest first, so a replayed song keeps only its latest play and never takes a second row
     const heard = new Set<string>()
-    const distinct = [...playing, ...recent].filter((l) => {
-      const song = `${l.track_metadata.artist_name}\n${l.track_metadata.track_name}`.toLowerCase()
-      return !heard.has(song) && !!heard.add(song)
-    }).slice(0, DISTINCT)
+    const distinct = [...playing, ...recent].filter(l => !heard.has(song(l)) && !!heard.add(song(l))).slice(0, DISTINCT)
     return await Promise.all(distinct.map(async (l, i): Promise<Track> => {
-      const { artist_name: artist, track_name: title, release_name: album = '', mbid_mapping: mapping } = l.track_metadata
+      const { artist_name: artist, track_name: title, release_name: album = '' } = l.track_metadata
+      // the song playing now is matched to MusicBrainz only once it is saved, so borrow an earlier play's match
+      const mapping = l.track_metadata.mbid_mapping ?? recent.find(r => sameSong(r, l) && r.track_metadata.mbid_mapping)?.track_metadata.mbid_mapping
       const found = await lookUpSong(artist, title).catch(() => ({ art: null, url: null }))
+      const archived = mapping?.caa_release_mbid ? artPath(`https://coverartarchive.org/release/${mapping.caa_release_mbid}/front-500`) : null
       const fallback = mapping?.recording_mbid
         ? `https://musicbrainz.org/recording/${mapping.recording_mbid}`
         : `https://music.apple.com/us/search?${new URLSearchParams({ term: `${artist} ${title}` })}`
@@ -53,7 +56,7 @@ export default defineCachedEventHandler(async (event): Promise<Track[]> => {
         artist,
         album,
         url: found.url ?? fallback,
-        art: found.art,
+        art: found.art ?? archived,
         playedAt: l.listened_at ? l.listened_at * 1000 : null,
         nowPlaying: i < playing.length,
       }
