@@ -107,7 +107,7 @@ export default defineNuxtConfig({
       ],
       script: [
         {
-          innerHTML: `(function(){var d=document.documentElement,m=matchMedia('(prefers-color-scheme: dark)').matches,t=null;try{t=localStorage.getItem('theme')}catch(e){t=null}if(t==='dark'||(t!=='light'&&m))d.classList.add('dark')})()`,
+          innerHTML: `(function(){var d=document.documentElement,m=matchMedia('(prefers-color-scheme: dark)').matches,t=null;try{t=localStorage.getItem('theme')}catch(e){t=null}if(t==='dark'||(t!=='light'&&m))d.classList.add('dark');try{if(localStorage.getItem('sticker-left'))d.classList.add('sticker-left')}catch(e){}})()`,
           tagPosition: 'head',
         },
       ],

@@ -80,9 +80,9 @@ onBeforeUnmount(() => {
 
         <p class="left" data-wall-clear>
           <NuxtLink v-if="total" to="/stickers" class="meta count">{{ total }} {{ total === 1 ? 'sticker' : 'stickers' }} left by visitors</NuxtLink>
-          <!-- the count and the visitor's own sticker arrive after the page, so their space is held from the start and nothing beside them moves -->
+          <!-- the count arrives after the page, so its space is held from the start and the button beside it never moves -->
           <span v-else class="meta count held" aria-hidden="true">00 stickers left by visitors</span>
-          <button type="button" class="button soft" :class="{ held: own?.left }" @pointerenter="reaching = true" @focus="reaching = true" @click="leaveOne">Leave a sticker</button>
+          <button type="button" class="button soft leave" @pointerenter="reaching = true" @focus="reaching = true" @click="leaveOne">Leave a sticker</button>
         </p>
       </header>
     </StickerWall>
@@ -152,6 +152,11 @@ onBeforeUnmount(() => {
 
 .held {
   visibility: hidden;
+}
+
+/* set before the first paint for a visitor who already left one, so the count is centred alone from the start */
+:global(.sticker-left) .leave {
+  display: none;
 }
 
 .count {

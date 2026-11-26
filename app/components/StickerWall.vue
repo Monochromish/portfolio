@@ -61,11 +61,22 @@ const { data } = await useFetch<StickerPage>('/api/guestbook', {
 })
 
 // the visitor's own, while it waits for review, goes up first
-const { data: own } = await useFetch<OwnSticker>('/api/guestbook/mine', {
+const { data: own, status: ownStatus } = await useFetch<OwnSticker>('/api/guestbook/mine', {
   key: 'guestbook-mine',
   default: () => ({ left: false, sticker: null }),
   server: false,
   lazy: true,
+})
+
+// remembered in this browser, so the next visit lays out the home page's count without the button from its first paint
+watch([ownStatus, () => own.value.left], ([status, left]) => {
+  if (status !== 'success') return
+  document.documentElement.classList.toggle('sticker-left', left)
+  try {
+    if (left) localStorage.setItem('sticker-left', '1')
+    else localStorage.removeItem('sticker-left')
+  }
+  catch {}
 })
 
 // without: stickers another wall already shows. grow: as tall as it takes to hold every sticker it is given
