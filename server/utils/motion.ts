@@ -7,7 +7,7 @@ interface AppleSearch {
 }
 
 interface AppleAlbums {
-  data?: { attributes?: { editorialVideo?: Record<string, { video?: string } | undefined> } }[]
+  data?: { attributes?: { editorialVideo?: Record<string, { video?: string } | undefined> } & Record<string, unknown> }[]
 }
 
 export interface Motion {
@@ -60,7 +60,7 @@ async function videoOf(token: string, album: string) {
   const { data = [] }: AppleAlbums = await (await apple(token, `/albums/${album}?extend=editorialVideo`)).json()
   const videos = data[0]?.attributes?.editorialVideo ?? {}
   const video = FORMATS.map(f => playable(videos[f]?.video)).find(Boolean) ?? null
-  if (!video) console.info(`no motion cover on album ${album}; Apple listed ${Object.keys(videos).join(', ') || 'no videos'}`)
+  if (!video) console.info(`no motion cover on album ${album}; Apple listed ${Object.keys(videos).join(', ') || 'no videos'} among ${Object.keys(data[0]?.attributes ?? {}).join(', ')}`)
   return video
 }
 
