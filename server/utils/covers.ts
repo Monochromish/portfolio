@@ -1,10 +1,3 @@
-interface ItunesSong {
-  artistName: string
-  trackName: string
-  artworkUrl100?: string
-  trackViewUrl?: string
-}
-
 interface DeezerTrack {
   title: string
   link: string
@@ -39,40 +32,25 @@ async function search(url: URL) {
   return res
 }
 
-async function itunes(artist: string, title: string): Promise<SongLookup | null> {
-  const url = new URL('https://itunes.apple.com/search')
-  url.search = new URLSearchParams({ term: `${firstArtist(artist)} ${bareTitle(title)}`, entity: 'song', limit: '10' }).toString()
-  const { results = [] }: { results?: ItunesSong[] } = await (await search(url)).json()
-  const song = results.find(s => matches(artist, title, s.artistName, s.trackName))
-  if (!song?.artworkUrl100) return null
-  const view = song.trackViewUrl ? new URL(song.trackViewUrl) : null
-  view?.searchParams.delete('uo')
-  // Apple resizes by path; 300 px matches the largest size the section shows
-  return { art: artPath(song.artworkUrl100.replace(/\/\d+x\d+bb\.(\w+)$/, '/300x300bb.$1')), url: view?.toString() ?? null }
-}
-
 async function deezer(artist: string, title: string): Promise<SongLookup | null> {
   const url = new URL('https://api.deezer.com/search')
-  url.search = new URLSearchParams({ q: `artist:"${firstArtist(artist)}" track:"${bareTitle(title)}"`, limit: '10' }).toString()
+  // a plain query: Deezer's artist:"" filter finds nothing for names like A$AP Rocky
+  url.search = new URLSearchParams({ q: `${firstArtist(artist)} ${bareTitle(title)}`, limit: '10' }).toString()
   const { data = [] }: { data?: DeezerTrack[] } = await (await search(url)).json()
   const song = data.find(s => matches(artist, title, s.artist.name, s.title))
   if (!song?.album.cover_big) return null
+  // Deezer resizes by path; 300 px matches the largest size the section shows
   return { art: artPath(song.album.cover_big.replace(/\/\d+x\d+-/, '/300x300-')), url: song.link }
 }
 
+// Apple's search would be first choice, but it answers 403 to requests from Cloudflare
 export const lookUpSong = defineCachedFunction(async (artist: string, title: string): Promise<SongLookup> => {
-  let failure: unknown
-  for (const source of [itunes, deezer]) {
-    try {
-      const found = await source(artist, title)
-      if (found?.art) return found
-    }
-    catch (error) {
-      failure = error
-      console.warn(`cover search for "${artist} - ${title}": ${error instanceof Error ? error.message : error}`)
-    }
+  try {
+    return await deezer(artist, title) ?? { art: null, url: null }
   }
-  // a refusal is not a miss: leave it uncached so the next poll asks again
-  if (failure) throw failure
-  return { art: null, url: null }
+  catch (error) {
+    // a refusal is not a miss: thrown, it stays uncached and the next refresh asks again
+    console.warn(`cover search for "${artist} - ${title}": ${error instanceof Error ? error.message : error}`)
+    throw error
+  }
 }, { name: 'covers', maxAge: 60 * 60 * 24, getKey: (artist: string, title: string) => plain(`${artist} ${title}`).replace(/ /g, '-') })
