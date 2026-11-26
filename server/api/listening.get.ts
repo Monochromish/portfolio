@@ -4,7 +4,6 @@ interface ListenMetadata {
   artist_name: string
   track_name: string
   release_name?: string
-  mbid_mapping?: { recording_mbid?: string, caa_release_mbid?: string }
 }
 
 interface Listen {
@@ -22,7 +21,6 @@ const BACKOFF_MS = 60_000
 let failedAt = 0
 
 const song = (l: Listen) => `${l.track_metadata.artist_name}\n${l.track_metadata.track_name}`.toLowerCase()
-const sameSong = (a: Listen, b: Listen) => song(a) === song(b)
 
 async function listens(path: string) {
   const res = await fetch(`https://api.listenbrainz.org/1/user/${path}`, { headers: { 'user-agent': 'himanshu.sh (+https://himanshu.sh)' }, signal: AbortSignal.timeout(5000) })
@@ -48,20 +46,15 @@ async function recent(listenbrainzUser: string, appleMusicToken: string): Promis
     const distinct = [...playing, ...played].filter(l => !heard.has(song(l)) && !!heard.add(song(l))).slice(0, DISTINCT)
     return await Promise.all(distinct.map(async (l, i): Promise<Track> => {
       const { artist_name: artist, track_name: title, release_name: album = '' } = l.track_metadata
-      // the song playing now is matched to MusicBrainz only once it is saved, so borrow an earlier play's match
-      const mapping = l.track_metadata.mbid_mapping ?? played.find(r => sameSong(r, l) && r.track_metadata.mbid_mapping)?.track_metadata.mbid_mapping
-      const [found, motion] = await Promise.all([lookUpSong(artist, title).catch(() => ({ art: null, url: null })), lookUpMotion(appleMusicToken, artist, title, album)])
-      const archived = mapping?.caa_release_mbid ? artPath(`https://coverartarchive.org/release/${mapping.caa_release_mbid}/front-500`) : null
-      const fallback = mapping?.recording_mbid
-        ? `https://musicbrainz.org/recording/${mapping.recording_mbid}`
-        : `https://music.apple.com/us/search?${new URLSearchParams({ term: `${artist} ${title}` })}`
+      const apple = await lookUpApple(appleMusicToken, artist, title, album)
       return {
         title,
         artist,
         album,
-        url: motion?.url ?? found.url ?? fallback,
-        art: found.art ?? archived,
-        motion: motion?.video ?? null,
+        url: apple?.url ?? `https://music.apple.com/us/search?${new URLSearchParams({ term: `${artist} ${title}` })}`,
+        // Apple only, so every cover matches Apple Music; with no match the row keeps its blank square
+        art: apple?.art ?? null,
+        motion: apple?.video ?? null,
         playedAt: l.listened_at ? l.listened_at * 1000 : null,
         nowPlaying: i < playing.length,
       }
