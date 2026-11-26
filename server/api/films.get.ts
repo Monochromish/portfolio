@@ -6,6 +6,10 @@ let failedAt = 0
 export default defineCachedEventHandler(async (event): Promise<Film[]> => {
   if (Date.now() - failedAt < BACKOFF_MS) throw createError({ statusCode: 503, statusMessage: 'Letterboxd failed recently, trying again shortly' })
   const { letterboxdUser } = useRuntimeConfig(event)
+  return fromEdge('films', 60 * 30, () => films(letterboxdUser))
+}, { name: 'letterboxd', maxAge: 60 * 30, swr: true, getKey: () => 'feed' })
+
+async function films(letterboxdUser: string): Promise<Film[]> {
   try {
     const xml = await $fetch<string>(`https://letterboxd.com/${letterboxdUser}/rss/`, {
       responseType: 'text',
@@ -18,4 +22,4 @@ export default defineCachedEventHandler(async (event): Promise<Film[]> => {
     failedAt = Date.now()
     throw error
   }
-}, { name: 'letterboxd', maxAge: 60 * 30, swr: true, getKey: () => 'feed' })
+}
