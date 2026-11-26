@@ -50,7 +50,7 @@ async function recent(listenbrainzUser: string, appleMusicToken: string): Promis
       const { artist_name: artist, track_name: title, release_name: album = '' } = l.track_metadata
       // the song playing now is matched to MusicBrainz only once it is saved, so borrow an earlier play's match
       const mapping = l.track_metadata.mbid_mapping ?? played.find(r => sameSong(r, l) && r.track_metadata.mbid_mapping)?.track_metadata.mbid_mapping
-      const [found, motion] = await Promise.all([lookUpSong(artist, title).catch(() => ({ art: null, url: null })), lookUpMotion(appleMusicToken, artist, title)])
+      const [found, motion] = await Promise.all([lookUpSong(artist, title).catch(() => ({ art: null, url: null })), lookUpMotion(appleMusicToken, artist, title, album)])
       const archived = mapping?.caa_release_mbid ? artPath(`https://coverartarchive.org/release/${mapping.caa_release_mbid}/front-500`) : null
       const fallback = mapping?.recording_mbid
         ? `https://musicbrainz.org/recording/${mapping.recording_mbid}`
