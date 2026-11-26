@@ -1,9 +1,9 @@
 const SOURCES = {
-  lastfm: { origin: 'https://lastfm-img.freetls.fastly.net', hosts: ['lastfm-img.freetls.fastly.net', 'lastfm.freetls.fastly.net'], path: /^\/i\/u\/\w+\/[0-9a-f]+\.(?:jpg|png|gif|webp)$/ },
+  apple: { origin: 'https://is1-ssl.mzstatic.com', hosts: ['is1-ssl.mzstatic.com', 'is2-ssl.mzstatic.com', 'is3-ssl.mzstatic.com', 'is4-ssl.mzstatic.com', 'is5-ssl.mzstatic.com'], path: /^\/image\/thumb\/(?:[\w-]+(?:\.[\w-]+)*\/)+\d+x\d+bb\.(?:jpg|png|webp)$/ },
   letterboxd: { origin: 'https://a.ltrbxd.com', hosts: ['a.ltrbxd.com'], path: /^\/resized\/[\w/-]+\.jpg$/ },
 }
 
-// art is served from this site so a visitor's browser never contacts Last.fm or Letterboxd
+// art is served from this site so a visitor's browser never contacts Apple or Letterboxd
 export function artPath(url: string) {
   const { hostname, pathname } = new URL(url)
   const source = Object.entries(SOURCES).find(([, s]) => s.hosts.includes(hostname))

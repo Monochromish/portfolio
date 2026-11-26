@@ -11,9 +11,9 @@ const now = useNow()
 const SKELETON = [['48%', '30%'], ['72%', '44%'], ['56%', '34%']] as const
 const fullDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 
-// Last.fm resizes and re-encodes art by path; 174s is 174 px
-const sized = (url: string, size: string) => url.replace(/\/i\/u\/[^/]+\/([0-9a-f]+)\.\w+$/, `/i/u/${size}/$1.webp`)
-const smallArt = (url: string) => sized(url, '174s')
+// Apple resizes art by path: 174x174bb is 174 px
+const sized = (url: string, px: number) => url.replace(/\/\d+x\d+bb\.(\w+)$/, `/${px}x${px}bb.$1`)
+const smallArt = (url: string) => sized(url, 174)
 const brokenArt = shallowReactive(new Set<string>())
 const loadedArt = shallowReactive(new Set<string>())
 
@@ -27,7 +27,7 @@ const rows = computed(() => tracks.value.map((t) => {
   // the newest track is shown large, so it takes the full-size art first
   const cover = t.art ? [t.art, smallArt(t.art)].find(src => !brokenArt.has(src)) ?? null : null
   // a 36 px row takes the 64 px file on an ordinary screen and the 174 px one on a sharper screen
-  const artSet = t.art && art === smallArt(t.art) ? `${sized(t.art, '64s')} 64w, ${art} 174w` : undefined
+  const artSet = t.art && art === smallArt(t.art) ? `${sized(t.art, 64)} 64w, ${art} 174w` : undefined
   return { ...t, key: t.url, art, artSet, cover }
 }))
 

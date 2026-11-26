@@ -16,8 +16,7 @@ export default defineNuxtConfig({
   modules: ['@unocss/nuxt'],
   devtools: { enabled: false },
   runtimeConfig: {
-    lastfmApiKey: '',
-    lastfmUser: 'Monochromish',
+    listenbrainzUser: 'Monochromish',
     letterboxdUser: 'monochromish',
     turnstileSecretKey: '',
     githubClientId: '',
