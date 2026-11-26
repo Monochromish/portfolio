@@ -15,8 +15,7 @@ export interface Motion {
   url: string | null
 }
 
-// the public API leaves motion covers out; Apple's own web player reads them from this host
-const API = 'https://amp-api.music.apple.com/v1/catalog/us'
+const API = 'https://api.music.apple.com/v1/catalog/us'
 const KEEP_S = 60 * 60 * 24 * 30
 const PAUSE_MS = 10 * 60_000
 // square first: the cover is square
