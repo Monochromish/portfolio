@@ -59,7 +59,9 @@ function rank(songs: AppleSong[], title: string, album: string) {
 async function videoOf(token: string, album: string) {
   const { data = [] }: AppleAlbums = await (await apple(token, `/albums/${album}?extend=editorialVideo`)).json()
   const videos = data[0]?.attributes?.editorialVideo ?? {}
-  return FORMATS.map(f => playable(videos[f]?.video)).find(Boolean) ?? null
+  const video = FORMATS.map(f => playable(videos[f]?.video)).find(Boolean) ?? null
+  if (!video) console.info(`no motion cover on album ${album}; Apple listed ${Object.keys(videos).join(', ') || 'no videos'}`)
+  return video
 }
 
 async function resolve(token: string, artist: string, title: string, album: string): Promise<Motion> {
