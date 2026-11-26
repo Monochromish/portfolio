@@ -32,11 +32,11 @@ async function listens(path: string) {
 export default defineCachedEventHandler(async (event): Promise<Track[]> => {
   const { listenbrainzUser, appleMusicToken } = useRuntimeConfig(event)
   if (!listenbrainzUser) throw createError({ statusCode: 503, statusMessage: 'NUXT_LISTENBRAINZ_USER is not set' })
-  if (Date.now() - failedAt < BACKOFF_MS) throw createError({ statusCode: 503, statusMessage: 'ListenBrainz failed recently, trying again shortly' })
   return fromEdge('listening', 30, () => recent(listenbrainzUser, appleMusicToken))
 }, { name: 'listenbrainz', maxAge: 30, swr: true, getKey: () => 'recent' })
 
 async function recent(listenbrainzUser: string, appleMusicToken: string): Promise<Track[]> {
+  if (Date.now() - failedAt < BACKOFF_MS) throw createError({ statusCode: 503, statusMessage: 'ListenBrainz failed recently, trying again shortly' })
   try {
     const user = encodeURIComponent(listenbrainzUser)
     // a song on repeat can fill a short page by itself, so ask for more than four
@@ -62,6 +62,7 @@ async function recent(listenbrainzUser: string, appleMusicToken: string): Promis
   }
   catch (error) {
     failedAt = Date.now()
+    console.error(`listening: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`)
     throw error
   }
 }
