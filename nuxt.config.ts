@@ -78,6 +78,12 @@ export default defineNuxtConfig({
       },
     },
   },
+  hooks: {
+    // hls.js is only for browsers that cannot play Apple's streams themselves, so no other browser downloads it ahead of time
+    'build:manifest'(manifest) {
+      for (const chunk of Object.values(manifest)) chunk.dynamicImports = chunk.dynamicImports?.filter(path => !path.includes('hls.js'))
+    },
+  },
   css: ['~/assets/css/main.css'],
   // 17 KB of styles in six files would each hold up the first paint; in the page they cost nothing extra.
   // UnoCSS turns inlining off unless told not to
