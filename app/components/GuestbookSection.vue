@@ -21,10 +21,15 @@ const { data, error, status } = await useFetch<StickerPage>('/api/guestbook', {
   ...wait,
 })
 
+// a board that failed to load would otherwise be handed to every visitor for the next minute
+if (import.meta.server && error.value) useResponseHeader('cache-control').value = 'no-store'
+
+// whether this visitor left one is theirs alone, so it is asked for after the page and the page itself can be shared
 const { data: own, refresh: refreshOwn, status: ownStatus } = await useFetch<OwnSticker>('/api/guestbook/mine', {
   key: 'guestbook-mine',
   default: () => ({ left: false, sticker: null }),
-  ...wait,
+  server: false,
+  lazy: true,
 })
 
 const settled = (s: string) => s === 'success' || s === 'error'
