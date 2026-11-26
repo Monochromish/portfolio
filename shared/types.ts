@@ -4,6 +4,7 @@ export interface Track {
   album: string
   url: string
   art: string | null
+  motion: string | null
   playedAt: number | null
   nowPlaying: boolean
 }

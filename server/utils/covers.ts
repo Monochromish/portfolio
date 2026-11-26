@@ -11,13 +11,13 @@ export interface SongLookup {
 }
 
 // "Artist feat. Guest" and "A & B" are listed under the first artist
-const firstArtist = (artist: string) => artist.split(/\s*(?:,|&|\bx\b|\bfeat\.?|\bft\.?|\bwith\b)\s*/i)[0] || artist
+export const firstArtist = (artist: string) => artist.split(/\s*(?:,|&|\bx\b|\bfeat\.?|\bft\.?|\bwith\b)\s*/i)[0] || artist
 // "(Remastered 2011)" and " - Live" differ between services, so compare what is left
-const bareTitle = (title: string) => title.replace(/\s*[([].*?[)\]]/g, '').replace(/\s+-\s+.*$/, '') || title
-const plain = (s: string) => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+export const bareTitle = (title: string) => title.replace(/\s*[([].*?[)\]]/g, '').replace(/\s+-\s+.*$/, '') || title
+export const plain = (s: string) => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 const loosely = (a: string, b: string) => !!a && !!b && (a.includes(b) || b.includes(a))
 // a wrong cover is worse than none, so a result counts only when artist and title both match
-const matches = (artist: string, title: string, gotArtist: string, gotTitle: string) =>
+export const matches = (artist: string, title: string, gotArtist: string, gotTitle: string) =>
   loosely(plain(gotArtist), plain(firstArtist(artist))) && loosely(plain(bareTitle(gotTitle)), plain(bareTitle(title)))
 
 async function search(url: URL) {

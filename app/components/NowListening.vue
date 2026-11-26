@@ -140,6 +140,7 @@ function ago(at: number) {
             @load="loadedArt.add(latest.cover!)"
             @error="brokenArt.add(latest.cover!)"
           />
+          <NowListeningMotion v-if="latest.motion" :key="latest.motion" :src="latest.motion" />
         </span>
         <span class="words">
           <span class="title" dir="auto">{{ latest.title }}</span>

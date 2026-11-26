@@ -17,6 +17,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   runtimeConfig: {
     listenbrainzUser: 'Monochromish',
+    appleMusicToken: '',
     letterboxdUser: 'monochromish',
     turnstileSecretKey: '',
     githubClientId: '',
